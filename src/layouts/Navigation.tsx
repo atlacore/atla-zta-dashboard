@@ -17,7 +17,9 @@ import { useApplicationContext } from "@/contexts/ApplicationProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { headerHeight } from "@/layouts/Header";
 import { NetworkNavigation } from "@/modules/networks/misc/NetworkNavigation";
+import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { SmallBadge } from "@components/ui/SmallBadge";
+import { BoxIcon, NetworkIcon, ServerIcon } from "lucide-react";
 import * as React from "react";
 import ReverseProxyIcon from "@/assets/icons/ReverseProxyIcon";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
@@ -34,10 +36,12 @@ export default function Navigation({
   const { bannerHeight } = useAnnouncement();
   const { isNavigationCollapsed } = useApplicationContext();
   const { permission, isRestricted } = usePermissions();
+  const { loggedInUser } = useLoggedInUser();
 
   return (
     <div
       className={cn(
+        
         "whitespace-nowrap md:border-r dark:border-zinc-700/40 bg-gray-50 dark:bg-nb-gray relative group/navigation transition-all",
         hideOnMobile ? "hidden md:block" : "",
         fullWidth
@@ -98,8 +102,26 @@ export default function Navigation({
 
                 <SidebarItem
                   icon={<SetupKeysIcon />}
-                  label="Setup Keys"
+                  label="SDK Keys"
                   href={"/setup-keys"}
+                  visible={permission.setup_keys.read}
+                />
+                <SidebarItem
+                  icon={<BoxIcon size={16} />}
+                  label="Resources"
+                  href={"/resources"}
+                  visible={permission.setup_keys.read}
+                />
+                <SidebarItem
+                  icon={<ServerIcon size={16} />}
+                  label="Edge Nodes"
+                  href={"/edges"}
+                  visible={permission.setup_keys.read}
+                />
+                <SidebarItem
+                  icon={<NetworkIcon size={16} />}
+                  label="IPAM"
+                  href={"/ipam"}
                   visible={permission.setup_keys.read}
                 />
                 <SidebarItem
@@ -111,6 +133,13 @@ export default function Navigation({
                   <SidebarItem
                     label="Policies"
                     href={"/access-control"}
+                    isChild
+                    exactPathMatch={true}
+                    visible={permission.policies.read}
+                  />
+                  <SidebarItem
+                    label="Access Policies"
+                    href={"/access-policies"}
                     isChild
                     exactPathMatch={true}
                     visible={permission.policies.read}
@@ -197,7 +226,7 @@ export default function Navigation({
                   icon={<TeamIcon />}
                   label="Team"
                   collapsible
-                  visible={permission.users.read}
+                  visible={permission.users.read || !!loggedInUser}
                 >
                   <SidebarItem
                     label="Users"
@@ -206,10 +235,10 @@ export default function Navigation({
                     visible={permission.users.read}
                   />
                   <SidebarItem
-                    label="Service Users"
+                    label="My Profile"
                     isChild
-                    href={"/team/service-users"}
-                    visible={permission.users.read}
+                    href={loggedInUser ? `/team/user?id=${loggedInUser.id}` : "/team/users"}
+                    visible={!permission.users.read && !!loggedInUser}
                   />
                 </SidebarItem>
                 <ActivityNavigationItem />

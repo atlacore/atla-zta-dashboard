@@ -1,4 +1,3 @@
-import { useOidcUser } from "@axa-fr/react-oidc";
 import Button from "@components/Button";
 import ButtonGroup from "@components/ButtonGroup";
 import { Checkbox } from "@components/Checkbox";
@@ -104,11 +103,9 @@ export const referralSourceOptions = [
 ];
 
 export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
-  const { oidcUser: user } = useOidcUser();
-  const name = user?.given_name || user?.name || user?.preferred_username;
-  const welcomeMessage = name
-    ? `Welcome to NetBird, ${name}!`
-    : "Welcome to NetBird!";
+  const { loggedInUser } = useLoggedInUser();
+  const name = loggedInUser?.displayName || loggedInUser?.email;
+  const welcomeMessage = name ? `Welcome, ${name}!` : "Welcome!";
 
   const isPrivate = domainCategory === "private";
   const [personalOrBusiness, setPersonalOrBusiness] = useState(
@@ -133,8 +130,6 @@ export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
   const [other, setOther] = useState(false);
   const [otherUseCase, setOtherUseCase] = useState("");
   const inputRef = React.useRef<HTMLInputElement>(null);
-
-  const { loggedInUser } = useLoggedInUser();
 
   const getUseCases = () => {
     const hl = homelab && !isBusiness ? "Homelab Automation" : "";
@@ -224,8 +219,8 @@ export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
     let fields: HubspotFormField[] = [];
     try {
       // Fallback: use OIDC user email if loggedInUser?.email is missing
-      const email = loggedInUser?.email || user?.email || "";
-      if (loggedInUser || user) {
+      const email = loggedInUser?.email || "";
+      if (loggedInUser) {
         fields = [
           {
             name: "email",

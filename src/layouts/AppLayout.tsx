@@ -10,7 +10,7 @@ import { Viewport } from "next";
 import localFont from "next/font/local";
 import React, { Suspense } from "react";
 import { Toaster } from "sonner";
-import OIDCProvider from "@/auth/OIDCProvider";
+import AtlaAuthProvider from "@/auth/AtlaAuthProvider";
 import FullScreenLoading from "@/components/ui/FullScreenLoading";
 import AnalyticsProvider, {
   GoogleTagManagerHeadScript,
@@ -18,7 +18,6 @@ import AnalyticsProvider, {
 import DialogProvider from "@/contexts/DialogProvider";
 import ErrorBoundaryProvider from "@/contexts/ErrorBoundary";
 import { GlobalThemeProvider } from "@/contexts/GlobalThemeProvider";
-import InstanceSetupProvider from "@/contexts/InstanceSetupProvider";
 import { NavigationEvents } from "@/contexts/NavigationEvents";
 
 const inter = localFont({
@@ -48,13 +47,11 @@ export default function AppLayout({
             <DialogProvider>
               <GlobalThemeProvider>
                 <ErrorBoundaryProvider>
-                  <InstanceSetupProvider>
-                    <OIDCProvider>
-                      <TooltipProvider delayDuration={0}>
-                        {children}
-                      </TooltipProvider>
-                    </OIDCProvider>
-                  </InstanceSetupProvider>
+                  <AtlaAuthProvider>
+                    <TooltipProvider delayDuration={0}>
+                      {children}
+                    </TooltipProvider>
+                  </AtlaAuthProvider>
                 </ErrorBoundaryProvider>
               </GlobalThemeProvider>
             </DialogProvider>

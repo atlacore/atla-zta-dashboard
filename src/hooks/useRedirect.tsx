@@ -14,7 +14,7 @@ export const useRedirect = (
 ) => {
   const router = useRouter();
   const currentPath = usePathname();
-  const callBackUrls = useRef([config.redirectURI, config.silentRedirectURI]);
+  const callBackUrls = useRef([(config as any).redirectURI, (config as any).silentRedirectURI].filter(Boolean));
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const retryCountRef = useRef(0);
 

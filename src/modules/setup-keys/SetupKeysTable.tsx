@@ -1,321 +1,285 @@
+"use client";
+
 import Button from "@components/Button";
-import ButtonGroup from "@components/ButtonGroup";
-import Card from "@components/Card";
-import InlineLink from "@components/InlineLink";
-import SquareIcon from "@components/SquareIcon";
 import { DataTable } from "@components/table/DataTable";
 import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
-import GetStartedTest from "@components/ui/GetStartedTest";
-import NoResults from "@components/ui/NoResults";
+import { notify } from "@components/Notification";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
+import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { ExternalLinkIcon, PlusCircle } from "lucide-react";
+import { Copy, KeyRound, PlusCircle, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
-import SetupKeysIcon from "@/assets/icons/SetupKeysIcon";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { Group } from "@/interfaces/Group";
-import { SetupKey } from "@/interfaces/SetupKey";
-import EmptyRow from "@/modules/common-table-rows/EmptyRow";
-import ExpirationDateRow from "@/modules/common-table-rows/ExpirationDateRow";
-import LastTimeRow from "@/modules/common-table-rows/LastTimeRow";
-import SetupKeyActionCell from "@/modules/setup-keys/SetupKeyActionCell";
-import SetupKeyGroupsCell from "@/modules/setup-keys/SetupKeyGroupsCell";
-import SetupKeyModal from "@/modules/setup-keys/SetupKeyModal";
-import SetupKeyNameCell from "@/modules/setup-keys/SetupKeyNameCell";
-import SetupKeyStatusCell from "@/modules/setup-keys/SetupKeyStatusCell";
-import SetupKeyUsageCell from "@/modules/setup-keys/SetupKeyUsageCell";
+import { SDKKey, SDKKeyCreateResponse } from "@/interfaces/SetupKey";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@components/Dialog";
+import { Label } from "@components/Label";
+import { Input } from "@components/Input";
+import { useDialog } from "@/contexts/DialogProvider";
 
-export const SetupKeysTableColumns: ColumnDef<SetupKey>[] = [
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return <DataTableHeader column={column}>Name & Key</DataTableHeader>;
-    },
-    sortingFn: "text",
-    cell: ({ row }) => (
-      <SetupKeyNameCell
-        name={row.original.name}
-        valid={row.original.valid}
-        secret={row.original.key}
-      />
-    ),
-  },
-  {
-    id: "valid",
-    accessorKey: "valid",
-    sortingFn: "basic",
-  },
-  {
-    accessorKey: "usage_limit",
-    header: ({ column }) => {
-      return <DataTableHeader column={column}>Usage</DataTableHeader>;
-    },
-    cell: ({ row }) => (
-      <SetupKeyUsageCell
-        current={row.original.used_times}
-        limit={row.original.usage_limit || 0}
-        reusable={row.original.type == "reusable"}
-      />
-    ),
-  },
-  {
-    accessorKey: "last_used",
-    header: ({ column }) => {
-      return <DataTableHeader column={column}>Last used</DataTableHeader>;
-    },
-    sortingFn: "datetime",
-    cell: ({ row }) => (
-      <LastTimeRow date={row.original.last_used} text={"Last used on"} />
-    ),
-  },
-  {
-    id: "group_strings",
-    accessorKey: "group_strings",
-    accessorFn: (s) => s.groups?.map((g) => g?.name || "").join(", "),
-  },
-  {
-    accessorFn: (item) => item.auto_groups?.length,
-    id: "groups",
-    header: ({ column }) => {
-      return <DataTableHeader column={column}>Groups</DataTableHeader>;
-    },
-    cell: ({ row }) => <SetupKeyGroupsCell setupKey={row.original} />,
-  },
+// ── Create Modal ────────────────────────────────────────────────────────────
 
-  {
-    accessorKey: "expires",
-    header: ({ column }) => {
-      return <DataTableHeader column={column}>Expires</DataTableHeader>;
-    },
-    cell: ({ row }) => {
-      let expires = dayjs(row.original.expires);
-      let isNeverExpiring = expires?.year() == 1 || false;
-      return !isNeverExpiring ? (
-        <ExpirationDateRow date={row.original.expires} />
-      ) : (
-        <EmptyRow className={"px-3"} />
-      );
-    },
-  },
-  {
-    id: "status",
-    accessorKey: "id",
-    header: ({ column }) => "",
-    cell: ({ row }) => <SetupKeyStatusCell setupKey={row.original} />,
-  },
-  {
-    accessorKey: "id",
-    header: "",
-    cell: ({ row }) => {
-      return <SetupKeyActionCell setupKey={row.original} />;
-    },
-  },
-];
-
-type Props = {
-  setupKeys?: SetupKey[];
-  isLoading: boolean;
-  headingTarget?: HTMLHeadingElement | null;
-  isGroupPage?: boolean;
-  groups?: Group[];
+type CreateSDKKeyModalProps = {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onCreated: () => void;
 };
 
-export default function SetupKeysTable({
-  setupKeys,
-  isLoading,
-  headingTarget,
-  isGroupPage,
-  groups,
-}: Readonly<Props>) {
+function CreateSDKKeyModal({ open, onOpenChange, onCreated }: CreateSDKKeyModalProps) {
+  const [name, setName] = useState("");
+  const [rawKey, setRawKey] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const sdkKeyRequest = useApiCall<SDKKeyCreateResponse>("/ui/sdk-key");
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    const promise = sdkKeyRequest.post({ name: name.trim() }).then((res) => {
+      setRawKey(res.key);
+      onCreated();
+    });
+    notify({
+      title: "Create SDK Key",
+      description: "SDK key successfully created.",
+      promise,
+      loadingMessage: "Creating SDK key...",
+    });
+  };
+
+  const handleCopy = () => {
+    if (!rawKey) return;
+    navigator.clipboard.writeText(rawKey).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleClose = () => {
+    setName("");
+    setRawKey(null);
+    setCopied(false);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
+      <DialogContent className={"max-w-md"}>
+        <DialogHeader>
+          <DialogTitle>
+            <div className={"flex items-center gap-2"}>
+              <KeyRound size={16} />
+              {rawKey ? "SDK Key Created" : "Create SDK Key"}
+            </div>
+          </DialogTitle>
+        </DialogHeader>
+
+        {!rawKey ? (
+          <>
+            <div className={"px-8 pb-4 flex flex-col gap-4"}>
+              <Label>Name</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={"e.g. CI/CD Pipeline"}
+                onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
+              <Button variant={"primary"} onClick={handleCreate} disabled={!name.trim()}>
+                <PlusCircle size={16} />
+                Create
+              </Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <>
+            <div className={"px-8 pb-4 flex flex-col gap-4"}>
+              <p className={"text-sm text-nb-gray-300"}>
+                Copy this key now — it will not be shown again.
+              </p>
+              <div
+                className={
+                  "flex items-center gap-2 bg-nb-gray-900 border border-nb-gray-800 rounded-md px-3 py-2 font-mono text-xs break-all"
+                }
+              >
+                <span className={"flex-1 select-all"}>{rawKey}</span>
+                <button
+                  onClick={handleCopy}
+                  className={"text-nb-gray-400 hover:text-white transition-colors shrink-0"}
+                >
+                  <Copy size={14} />
+                </button>
+              </div>
+              {copied && <p className={"text-xs text-green-400"}>Copied!</p>}
+            </div>
+            <DialogFooter>
+              <Button variant={"primary"} onClick={handleClose}>Done</Button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ── Table ────────────────────────────────────────────────────────────────────
+
+type Props = {
+  setupKeys?: SDKKey[];
+  isLoading: boolean;
+  headingTarget?: HTMLHeadingElement | null;
+};
+
+export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
+  const { confirm } = useDialog();
+  const [createOpen, setCreateOpen] = useState(false);
+  const sdkKeyRequest = useApiCall<{ status: string }>("/ui/sdk-key");
 
-  // Default sorting state of the table
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
-    [
-      {
-        id: "valid",
-        desc: true,
-      },
-      {
-        id: "last_used",
-        desc: true,
-      },
-      {
-        id: "name",
-        desc: true,
-      },
-    ],
-    !isGroupPage,
+    [{ id: "createdAt", desc: true }],
   );
 
-  const [open, setOpen] = useState(false);
+  const revoke = async (key: SDKKey) => {
+    const choice = await confirm({
+      title: `Revoke '${key.name}'?`,
+      description: "This key will be permanently revoked and can no longer be used.",
+      confirmText: "Revoke",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!choice) return;
+
+    const promise = sdkKeyRequest.del(undefined, `/${key.id}`).then(() => mutate("/ui/sdk-keys"));
+    notify({
+      title: "Revoke SDK Key",
+      description: `Key '${key.name}' successfully revoked.`,
+      promise,
+      loadingMessage: "Revoking key...",
+    });
+  };
+
+  const columns: ColumnDef<SDKKey>[] = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Name</DataTableHeader>
+      ),
+      sortingFn: "text",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-2">
+          <KeyRound size={14} className="text-nb-gray-400 shrink-0" />
+          <span className="font-medium text-sm">{row.original.name}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "lastUsedAt",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Last Used</DataTableHeader>
+      ),
+      sortingFn: "datetime",
+      cell: ({ row }) =>
+        row.original.lastUsedAt ? (
+          <span className="text-sm text-nb-gray-300">
+            {dayjs(row.original.lastUsedAt).format("MMM D, YYYY")}
+          </span>
+        ) : (
+          <span className="text-sm text-nb-gray-500">Never</span>
+        ),
+    },
+    {
+      accessorKey: "expiresAt",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Expires</DataTableHeader>
+      ),
+      sortingFn: "datetime",
+      cell: ({ row }) => {
+        if (!row.original.expiresAt) {
+          return <span className="text-sm text-nb-gray-500">Never</span>;
+        }
+        const expired = dayjs(row.original.expiresAt).isBefore(dayjs());
+        return (
+          <span className={`text-sm ${expired ? "text-red-400" : "text-nb-gray-300"}`}>
+            {dayjs(row.original.expiresAt).format("MMM D, YYYY")}
+          </span>
+        );
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Created</DataTableHeader>
+      ),
+      sortingFn: "datetime",
+      cell: ({ row }) => (
+        <span className="text-sm text-nb-gray-300">
+          {dayjs(row.original.createdAt).format("MMM D, YYYY")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) =>
+        permission.setup_keys?.delete ? (
+          <div className="flex justify-end pr-4">
+            <Button
+              variant={"danger-outline"}
+              className={"!px-3"}
+              onClick={() => revoke(row.original)}
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        ) : null,
+    },
+  ];
 
   return (
     <>
-      {open && <SetupKeyModal open={open} setOpen={setOpen} groups={groups} />}
+      <CreateSDKKeyModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => mutate("/ui/sdk-keys")}
+      />
       <DataTable
         headingTarget={headingTarget}
         isLoading={isLoading}
-        wrapperComponent={isGroupPage ? Card : undefined}
-        wrapperProps={isGroupPage ? { className: "mt-6 w-full" } : undefined}
-        paginationPaddingClassName={isGroupPage ? "px-0 pt-8" : undefined}
-        tableClassName={isGroupPage ? "mt-0 mb-2" : undefined}
-        inset={false}
-        minimal={isGroupPage}
-        keepStateInLocalStorage={!isGroupPage}
-        text={"Setup Keys"}
+        text={"SDK Keys"}
         sorting={sorting}
         setSorting={setSorting}
-        columns={SetupKeysTableColumns}
-        data={setupKeys}
-        searchPlaceholder={"Search by name, type or group..."}
-        columnVisibility={{
-          valid: false,
-          group_strings: false,
-        }}
-        getStartedCard={
-          isGroupPage ? (
-            <NoResults
-              icon={<SetupKeysIcon className={"fill-nb-gray-200"} size={20} />}
-              className={"py-4"}
-              title={"This group is not used within any setup keys yet"}
-              description={
-                "Assign this group when creating a new setup key to see them listed here."
-              }
-            >
-              <Button
-                variant={"primary"}
-                className={"mt-4"}
-                onClick={() => setOpen(true)}
-                disabled={!permission.setup_keys.create}
-              >
-                <PlusCircle size={16} />
-                Create Setup Key
-              </Button>
-            </NoResults>
-          ) : (
-            <GetStartedTest
-              icon={
-                <SquareIcon
-                  icon={
-                    <SetupKeysIcon className={"fill-nb-gray-200"} size={20} />
-                  }
-                  color={"gray"}
-                  size={"large"}
-                />
-              }
-              title={"Create Setup Key"}
-              description={
-                "Add a setup key to register new machines in your network. The key links machines to your account during initial setup."
-              }
-              button={
-                <Button
-                  variant={"primary"}
-                  className={""}
-                  onClick={() => setOpen(true)}
-                  disabled={!permission.setup_keys.create}
-                >
-                  <PlusCircle size={16} />
-                  Create Setup Key
-                </Button>
-              }
-              learnMore={
-                <>
-                  Learn more about
-                  <InlineLink
-                    href={
-                      "https://docs.netbird.io/how-to/register-machines-using-setup-keys"
-                    }
-                    target={"_blank"}
-                  >
-                    Setup Keys
-                    <ExternalLinkIcon size={12} />
-                  </InlineLink>
-                </>
-              }
-            />
-          )
+        columns={columns}
+        data={setupKeys ?? []}
+        searchPlaceholder={"Search by name..."}
+        rightSide={() =>
+          permission.setup_keys?.create ? (
+            <Button variant={"primary"} onClick={() => setCreateOpen(true)}>
+              <PlusCircle size={16} />
+              Create SDK Key
+            </Button>
+          ) : null
         }
-        rightSide={() => (
-          <>
-            {setupKeys && setupKeys?.length > 0 && (
-              <Button
-                variant={"primary"}
-                className={"ml-auto"}
-                onClick={() => setOpen(true)}
-                disabled={!permission.setup_keys.create}
-              >
-                <PlusCircle size={16} />
-                Create Setup Key
-              </Button>
-            )}
-          </>
-        )}
       >
         {(table) => (
           <>
-            <ButtonGroup disabled={setupKeys?.length == 0}>
-              <ButtonGroup.Button
-                onClick={() => {
-                  table.setPageIndex(0);
-                  table.getColumn("valid")?.setFilterValue(undefined);
-                }}
-                disabled={setupKeys?.length == 0}
-                variant={
-                  table.getColumn("valid")?.getFilterValue() == undefined
-                    ? "tertiary"
-                    : "secondary"
-                }
-              >
-                All
-              </ButtonGroup.Button>
-              <ButtonGroup.Button
-                onClick={() => {
-                  table.setPageIndex(0);
-                  table.getColumn("valid")?.setFilterValue(true);
-                }}
-                disabled={setupKeys?.length == 0}
-                variant={
-                  table.getColumn("valid")?.getFilterValue() == true
-                    ? "tertiary"
-                    : "secondary"
-                }
-              >
-                Valid
-              </ButtonGroup.Button>
-              <ButtonGroup.Button
-                onClick={() => {
-                  table.setPageIndex(0);
-                  table.getColumn("valid")?.setFilterValue(false);
-                }}
-                disabled={setupKeys?.length == 0}
-                variant={
-                  table.getColumn("valid")?.getFilterValue() == false
-                    ? "tertiary"
-                    : "secondary"
-                }
-              >
-                Expired
-              </ButtonGroup.Button>
-            </ButtonGroup>
-            <DataTableRowsPerPage
-              table={table}
-              disabled={setupKeys?.length == 0}
-            />
+            <DataTableRowsPerPage table={table} disabled={!setupKeys?.length} />
             <DataTableRefreshButton
-              isDisabled={setupKeys?.length == 0}
-              onClick={() => {
-                mutate("/setup-keys").then();
-                mutate("/groups").then();
-              }}
+              isDisabled={!setupKeys?.length}
+              onClick={() => mutate("/ui/sdk-keys")}
             />
           </>
         )}

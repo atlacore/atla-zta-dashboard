@@ -159,7 +159,7 @@ export const TransparentEditIconButton = () => {
 export const UserCountStack = ({ group }: { group: Group }) => {
   const { users } = useUsers();
   const usersOfGroup =
-    users?.filter((user) => user.auto_groups.includes(group.id as string)) ||
+    users?.filter((user) => user.auto_groups?.includes(group.id as string)) ||
     [];
   return (
     <HorizontalUsersStack

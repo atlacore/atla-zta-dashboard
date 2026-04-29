@@ -1,7 +1,7 @@
 import loadConfig from "@utils/config";
 
 const config = loadConfig();
-export const GRPC_API_ORIGIN = config.grpcApiOrigin;
+export const GRPC_API_ORIGIN = (config as any).grpcApiOrigin;
 
 export const getNetBirdUpCommand = () => {
   let cmd = "netbird up";

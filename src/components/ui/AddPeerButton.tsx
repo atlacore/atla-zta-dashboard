@@ -1,4 +1,3 @@
-import { useOidcUser } from "@axa-fr/react-oidc";
 import Button from "@components/Button";
 import { Modal, ModalTrigger } from "@components/modal/Modal";
 import useFetchApi from "@utils/api";
@@ -7,10 +6,11 @@ import React, { memo, useState } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Peer } from "@/interfaces/Peer";
 import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import { useLoggedInUser } from "@/contexts/UsersProvider";
 
 function AddPeerButton() {
   const { data: peers } = useFetchApi<Peer[]>("/peers");
-  const { oidcUser: user } = useOidcUser();
+  const { loggedInUser: user } = useLoggedInUser();
 
   const [hasOnboardingFormCompleted] = useLocalStorage(
     "netbird-onboarding-modal",
@@ -44,7 +44,7 @@ function AddPeerButton() {
             Add Peer
           </Button>
         </ModalTrigger>
-        <SetupModal user={user} />
+        <SetupModal user={user ? { given_name: user.displayName || user.name || user.email } : undefined} />
       </Modal>
     </>
   );

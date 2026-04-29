@@ -22,7 +22,7 @@ type UserNodeProps = Node<
 >;
 
 export const SelectUserNode = ({ data, id }: UserNodeProps) => {
-  const { data: users } = useFetchApi<User[]>("/users?service_user=false");
+  const { data: users } = useFetchApi<User[]>("/ui/users");
 
   const userSelectOptions: SelectOption[] = sortBy(
     users?.map(

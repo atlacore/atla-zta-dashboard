@@ -11,12 +11,9 @@ import { ColumnDef, SortingState } from "@tanstack/react-table";
 import dayjs from "dayjs";
 import { uniqBy } from "lodash";
 import { ExternalLinkIcon } from "lucide-react";
-import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
-import { useSWRConfig } from "swr";
 import PeerIcon from "@/assets/icons/PeerIcon";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ActivityEvent } from "@/interfaces/ActivityEvent";
 import { ActivityEntryRow } from "@/modules/activity/ActivityEntryRow";
 import { ActivityEventCodeSelector } from "@/modules/activity/ActivityEventCodeSelector";
@@ -29,6 +26,12 @@ type Props = {
   events?: ActivityEvent[];
   isLoading: boolean;
   headingTarget?: HTMLHeadingElement | null;
+  /** Controlled date range — server-side filtering is done by the parent. */
+  dateRange?: DateRange;
+  /** Called when the user picks a new date range in the DatePicker. */
+  onDateRangeChange?: (range: DateRange | undefined) => void;
+  /** Called when the user clicks the refresh button. */
+  onRefresh?: () => void;
 };
 
 const ActivityFeedColumnsTable: ColumnDef<ActivityEvent>[] = [
@@ -60,7 +63,6 @@ const ActivityFeedColumnsTable: ColumnDef<ActivityEvent>[] = [
   {
     accessorKey: "timestamp",
     id: "timestamp",
-    filterFn: "dateRange",
   },
   {
     accessorKey: "activity",
@@ -68,7 +70,7 @@ const ActivityFeedColumnsTable: ColumnDef<ActivityEvent>[] = [
   },
   {
     id: "initiator_email",
-    accessorFn: (row) => row.initiator_email || "NetBird",
+    accessorFn: (row) => row.initiator_email || "System",
     filterFn: "exactMatch",
   },
 ];
@@ -80,10 +82,10 @@ export default function ActivityTable({
   events,
   isLoading,
   headingTarget,
+  dateRange,
+  onDateRangeChange,
+  onRefresh,
 }: Props) {
-  const { mutate } = useSWRConfig();
-  const path = usePathname();
-
   // Default sorting state of the table
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -92,19 +94,16 @@ export default function ActivityTable({
     },
   ]);
 
-  // Initial Date Range
-  const [initialDateRange, setInitialDateRange] = useLocalStorage<
-    DateRange | undefined
-  >("netbird-table-range" + path, {
-    from: defaultFromDate,
-    to: defaultToDate,
-  });
-
-  // Range for DatePicker
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: dayjs(initialDateRange?.from).toDate(),
-    to: dayjs(initialDateRange?.to).toDate(),
-  });
+  // Local display state for the DatePicker (synced from controlled prop)
+  const pickerValue = useMemo<DateRange | undefined>(() => {
+    if (dateRange) {
+      return {
+        from: dayjs(dateRange.from).toDate(),
+        to: dayjs(dateRange.to).toDate(),
+      };
+    }
+    return { from: defaultFromDate, to: defaultToDate };
+  }, [dateRange]);
 
   const userSelectOptions = useMemo(() => {
     const uniqueUsers = uniqBy(events, (event) => event.initiator_email);
@@ -112,7 +111,7 @@ export default function ActivityTable({
       return {
         name: event.initiator_name,
         id: event.initiator_id,
-        email: event.initiator_email || "NetBird",
+        email: event.initiator_email || "System",
         external: !!event?.meta?.external,
       } as UserSelectOption;
     });
@@ -147,10 +146,10 @@ export default function ActivityTable({
               size={"large"}
             />
           }
-          title={"Get Started with NetBird"}
+          title={"Get Started with Atla ZTA"}
           description={
-            "It looks like you don't have any connected machines.\n" +
-            "Get started by adding one to your network."
+            "It looks like you don't have any audit events yet.\n" +
+            "Events will appear here as actions are performed."
           }
           button={<AddPeerButton />}
           learnMore={
@@ -169,22 +168,17 @@ export default function ActivityTable({
       }
       onFilterReset={() => {
         const date = { from: defaultFromDate, to: defaultToDate };
-        setInitialDateRange(date);
-        setDateRange(date);
+        onDateRangeChange?.(date);
       }}
     >
       {(table) => {
         return (
           <>
             <DatePickerWithRange
-              value={dateRange}
+              value={pickerValue}
               onChange={(range) => {
-                setDateRange(range);
-                setInitialDateRange(range);
+                onDateRangeChange?.(range);
                 table.setPageIndex(0);
-                table
-                  .getColumn("timestamp")
-                  ?.setFilterValue([range?.from, range?.to]);
               }}
             />
             {events && (
@@ -226,9 +220,7 @@ export default function ActivityTable({
             />
             <DataTableRefreshButton
               isDisabled={events?.length == 0}
-              onClick={() => {
-                mutate("/events/audit").then();
-              }}
+              onClick={() => onRefresh?.()}
             />
           </>
         );

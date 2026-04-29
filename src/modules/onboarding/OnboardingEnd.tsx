@@ -1,5 +1,5 @@
-import { useOidcUser } from "@axa-fr/react-oidc";
 import Button from "@components/Button";
+import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { ArrowRightIcon, PlayIcon } from "lucide-react";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
@@ -13,8 +13,8 @@ type Props = {
 };
 
 export const OnboardingEnd = ({ onFinish }: Props) => {
-  const { oidcUser: user } = useOidcUser();
-  const name = user?.given_name || user?.name || user?.preferred_username;
+  const { loggedInUser } = useLoggedInUser();
+  const name = loggedInUser?.displayName || loggedInUser?.email;
 
   const title = name ? `Congratulations, ${name}!` : "Congratulations!";
 

@@ -1,6 +1,7 @@
 import { Group } from "@/interfaces/Group";
 import { User } from "@/interfaces/User";
 
+/** Legacy peer interface — kept for backward compatibility with NetBird modules */
 export interface Peer {
   id?: string;
   name: string;
@@ -44,4 +45,21 @@ export interface PeerLocalFlags {
   rosenpass_enabled: boolean;
   rosenpass_permissive: boolean;
   server_ssh_allowed: boolean;
+}
+
+/** Atla-ZTA peer session — returned from GET /ui/peers */
+export interface PeerSession {
+  id: string;
+  tenantId: string;
+  userId: string;
+  resourceId?: string;
+  region: string;
+  allocatedIp: string;
+  wgPubkey: string;
+  clientIp: string;
+  deviceId?: string;
+  status: "active" | "revoked" | "expired";
+  createdAt: string;
+  expiresAt: string;
+  revokedAt?: string;
 }

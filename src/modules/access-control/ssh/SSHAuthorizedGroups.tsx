@@ -112,7 +112,7 @@ function AuthorizedUserRow({
 
   const usersOfGroup = useMemo(
     () =>
-      users?.filter((user) => user.auto_groups.includes(group?.id || "")) || [],
+      users?.filter((user) => user.auto_groups?.includes(group?.id || "")) || [],
     [users, group],
   );
 

@@ -1,31 +1,21 @@
-import { useOidcUser } from "@axa-fr/react-oidc";
-import FullScreenLoading from "@components/ui/FullScreenLoading";
-import { Params, useApiCall } from "@utils/api";
+"use client";
+
+import { Params } from "@utils/api";
 import { useIsMd } from "@utils/responsive";
-import { getLatestNetbirdRelease } from "@utils/version";
 import React, {
   useCallback,
   useContext,
   useEffect,
-  useMemo,
-  useRef,
   useState,
 } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
-import { User } from "@/interfaces/User";
-import type { NetbirdRelease } from "@/interfaces/Version";
 
-type Props = {
-  children: React.ReactNode;
-};
+type Props = { children: React.ReactNode };
 
 const ApplicationContext = React.createContext(
   {} as {
-    latestVersion: string | undefined;
-    latestUrl: string | undefined;
     toggleMobileNav: () => void;
     mobileNavOpen: boolean;
-    user: any;
     globalApiParams?: Params;
     setGlobalApiParams?: (p?: Params) => void;
     isNavigationCollapsed: boolean;
@@ -34,92 +24,32 @@ const ApplicationContext = React.createContext(
 );
 
 export default function ApplicationProvider({ children }: Props) {
-  const [latestRelease, setLatestRelease] = useLocalStorage<
-    NetbirdRelease | undefined
-  >("netbird-latest-release", undefined);
-  const { oidcUser: user } = useOidcUser();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const isMd = useIsMd();
-  const userRequest = useApiCall<User[]>(`/users`, true);
-  const [show, setShow] = useState(false);
   const [isNavigationCollapsed, setIsNavigationCollapsed] = useLocalStorage(
-    "netbird-nav-collapsed",
+    "atla-nav-collapsed",
     false,
   );
-  const requestCalled = useRef(false);
-  const maxTries = 3;
-
-  const [globalApiParams, setGlobalApiParams] = useLocalStorage<
-    Params | undefined
-  >("netbird-api-params", undefined);
-
-  const populateCache = useCallback(
-    async (tries = 0) => {
-      if (tries >= maxTries) {
-        setShow(true);
-        return Promise.reject();
-      }
-      try {
-        await userRequest.get().then(() => setShow(true));
-        return Promise.resolve();
-      } catch (e) {
-        setTimeout(() => populateCache(tries + 1), 500);
-      }
-    },
-    [userRequest, setShow],
+  const [globalApiParams, setGlobalApiParams] = useLocalStorage<Params | undefined>(
+    "atla-api-params",
+    undefined,
   );
+
+  useEffect(() => {
+    if (isMd) setMobileNavOpen(false);
+  }, [isMd]);
+
+  const toggleMobileNav = () => setMobileNavOpen((v) => !v);
 
   const toggleNavigation = useCallback(() => {
     setIsNavigationCollapsed((prev) => !prev);
-  }, []);
+  }, [setIsNavigationCollapsed]);
 
-  useEffect(() => {
-    if (!requestCalled.current) {
-      populateCache().then();
-      requestCalled.current = true;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Hide mobile nav when windows gets resized
-  useEffect(() => {
-    if (isMd) {
-      setMobileNavOpen(false);
-    }
-  }, [isMd]);
-
-  useEffect(() => {
-    async function fetchLatestRelease() {
-      const release = await getLatestNetbirdRelease(latestRelease);
-      setLatestRelease(release);
-    }
-    fetchLatestRelease().then();
-    const interval = setInterval(
-      fetchLatestRelease,
-      1000 * 60 * 30, // Run every 30 minutes
-    );
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const latestVersion = useMemo(
-    () => latestRelease?.latest_version,
-    [latestRelease],
-  );
-  const latestUrl = useMemo(() => latestRelease?.url, [latestRelease]);
-
-  const toggleMobileNav = () => {
-    setMobileNavOpen(!mobileNavOpen);
-  };
-
-  return show ? (
+  return (
     <ApplicationContext.Provider
       value={{
-        latestVersion,
         toggleMobileNav,
-        latestUrl,
         mobileNavOpen,
-        user,
         globalApiParams,
         setGlobalApiParams,
         isNavigationCollapsed,
@@ -128,8 +58,6 @@ export default function ApplicationProvider({ children }: Props) {
     >
       {children}
     </ApplicationContext.Provider>
-  ) : (
-    <FullScreenLoading />
   );
 }
 

@@ -20,12 +20,10 @@ import React, { useMemo, useState } from "react";
 
 type Props = {
   children: React.ReactNode;
-  userId?: string;
 };
 
 export default function ChangePasswordModal({
   children,
-  userId,
 }: Readonly<Props>) {
   const [modal, setModal] = useState(false);
 
@@ -33,7 +31,6 @@ export default function ChangePasswordModal({
     <Modal open={modal} onOpenChange={setModal} key={modal ? 1 : 0}>
       <ModalTrigger asChild>{children}</ModalTrigger>
       <ChangePasswordModalContent
-        userId={userId}
         onSuccess={() => setModal(false)}
       />
     </Modal>
@@ -41,15 +38,13 @@ export default function ChangePasswordModal({
 }
 
 type ModalProps = {
-  userId?: string;
   onSuccess?: () => void;
 };
 
 export function ChangePasswordModalContent({
-  userId,
   onSuccess,
 }: Readonly<ModalProps>) {
-  const passwordRequest = useApiCall<void>(`/users/${userId}/password`, true);
+  const passwordRequest = useApiCall<void>("/ui/auth/password", true);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -81,7 +76,7 @@ export function ChangePasswordModalContent({
   }, [currentPassword, newPassword, confirmPassword]);
 
   const changePassword = async () => {
-    if (!userId || isDisabled) return;
+    if (isDisabled) return;
 
     setIsLoading(true);
     notify({
@@ -89,8 +84,8 @@ export function ChangePasswordModalContent({
       description: "Your password has been successfully changed.",
       promise: passwordRequest
         .put({
-          old_password: currentPassword,
-          new_password: newPassword,
+          currentPassword,
+          newPassword,
         })
         .then(() => {
           onSuccess && onSuccess();

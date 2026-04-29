@@ -34,7 +34,7 @@ export default function DangerZoneTab({ account }: Props) {
             // Optionally, clear cookies if needed
             // document.cookie = ... (set cookies to expire)
           }
-          logout().then();
+          logout();
           resolve();
         })
         .catch((error) => reject(error));

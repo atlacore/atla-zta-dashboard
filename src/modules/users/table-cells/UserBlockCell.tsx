@@ -1,7 +1,7 @@
 import { notify } from "@components/Notification";
 import { ToggleSwitch } from "@components/ToggleSwitch";
 import { useApiCall } from "@utils/api";
-import React, { useMemo } from "react";
+import React from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
@@ -11,26 +11,24 @@ type Props = {
   user: User;
   isUserPage?: boolean;
 };
+
 export default function UserBlockCell({ user, isUserPage = false }: Props) {
-  const userRequest = useApiCall<User>("/users");
+  const userRequest = useApiCall<User>("/ui/user");
   const { mutate } = useSWRConfig();
   const { confirm } = useDialog();
   const { permission } = usePermissions();
 
-  const isChecked = useMemo(() => {
-    return user.is_blocked;
-  }, [user]);
-
-  const disabled = user.is_current || user.role === "owner";
+  const isChecked = user.isBlocked;
+  const disabled = user.role === "owner";
 
   const update = async (blocked: boolean) => {
-    const name = user.name || "User";
+    const name = user.displayName || user.email || "User";
 
     if (blocked) {
       const choice = await confirm({
         title: `Block '${name}'?`,
         description:
-          "This action will immediately revoke the user's access and disconnect all of their active peers.",
+          "This action will immediately revoke the user's access.",
         confirmText: "Block",
         cancelText: "Cancel",
         type: "danger",
@@ -40,30 +38,20 @@ export default function UserBlockCell({ user, isUserPage = false }: Props) {
 
     notify({
       title: blocked ? "User blocked" : "User unblocked",
-      description:
-        name + " was successfully " + (blocked ? "blocked." : "unblocked."),
+      description: name + " was successfully " + (blocked ? "blocked." : "unblocked."),
       promise: userRequest
-        .put(
-          {
-            role: user.role,
-            auto_groups: user.auto_groups,
-            is_blocked: blocked,
-          },
-          `/${user.id}`,
-        )
+        .patch({ isBlocked: blocked }, `/${user.id}`)
         .then(() => {
-          mutate(`/users?service_user=false`);
-          if (isUserPage) mutate(`/users`);
+          mutate("/ui/users");
+          if (isUserPage) mutate("/ui/user");
         }),
-      loadingMessage: blocked
-        ? "Blocking the user..."
-        : "Unblocking the user...",
+      loadingMessage: blocked ? "Blocking the user..." : "Unblocking the user...",
     });
   };
 
-  if (user?.pending_approval) return;
+  if (disabled) return null;
 
-  return !disabled ? (
+  return (
     <div className={"flex"}>
       <ToggleSwitch
         disabled={!permission.users.update}
@@ -73,5 +61,5 @@ export default function UserBlockCell({ user, isUserPage = false }: Props) {
         onClick={() => update(!isChecked)}
       />
     </div>
-  ) : null;
+  );
 }

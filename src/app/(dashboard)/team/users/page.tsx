@@ -21,7 +21,7 @@ export default function TeamUsers() {
   const { isLoading: isGroupsLoading } = useGroups();
   const { permission } = usePermissions();
   const { data: users, isLoading } = useFetchApi<User[]>(
-    "/users?service_user=false",
+    "/ui/users",
   );
 
   const { ref: headingRef, portalTarget } =

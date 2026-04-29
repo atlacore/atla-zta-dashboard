@@ -2,34 +2,19 @@ import { randomBoolean, randomString } from "@utils/helpers";
 import { useMemo } from "react";
 import type { Peer } from "@/interfaces/Peer";
 import type { GroupedRoute } from "@/interfaces/Route";
-import type { SetupKey } from "@/interfaces/SetupKey";
+import type { SDKKey } from "@/interfaces/SetupKey";
 
 export function useSetupKeyPlaceholders() {
   return useMemo(() => {
     const arr = [];
     for (let i = 0; i < 8; i++) {
-      const r = randomBoolean();
-      const t = randomBoolean();
       arr.push({
-        key: randomString(),
         id: randomString(),
         name: randomString(),
-        expires: new Date(),
-        last_used: new Date(),
-        revoked: r,
-        state: "placeholder",
-        type: t ? "reusable" : "one-off",
-        used_times: 0,
-        valid: !r,
-        auto_groups: [],
-        expires_in: 0,
-        usage_limit: null,
-        ephemeral: randomBoolean(),
-        allow_extra_dns_labels: randomBoolean(),
-      } as SetupKey);
+        createdAt: new Date().toISOString(),
+      } as SDKKey);
     }
-
-    return Object.freeze(arr) as SetupKey[];
+    return Object.freeze(arr) as SDKKey[];
   }, []);
 }
 export function usePeerPlaceholders() {

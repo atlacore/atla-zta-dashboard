@@ -822,6 +822,222 @@ export default function ActivityDescription({ event }: Props) {
     );
 
   /**
+   * ZTA — User events
+   */
+
+  if (event.activity_code == "user.created")
+    return (
+      <div className={"inline"}>
+        User <Value>{m.ext_sub || event.target_id}</Value> was created with role{" "}
+        <Value>{m.role}</Value>
+      </div>
+    );
+
+  if (event.activity_code == "user.updated")
+    return (
+      <div className={"inline"}>
+        User <Value>{m.display_name || event.target_id}</Value> was updated
+        {m.role && (
+          <>
+            {" "}
+            — role <Value>{m.role}</Value>
+          </>
+        )}
+      </div>
+    );
+
+  if (event.activity_code == "user.deleted")
+    return (
+      <div className={"inline"}>
+        User <Value>{event.target_id}</Value> was deleted
+      </div>
+    );
+
+  if (event.activity_code == "user.login")
+    return (
+      <div className={"inline"}>
+        User <Value>{event.target_id}</Value> logged in
+      </div>
+    );
+
+  if (event.activity_code == "user.login_failed")
+    return (
+      <div className={"inline"}>
+        Login failed for <Value>{event.target_id}</Value>
+        {m.reason && (
+          <>
+            {" "}
+            — <Value>{m.reason}</Value>
+          </>
+        )}
+      </div>
+    );
+
+  if (event.activity_code == "user.password_changed")
+    return (
+      <div className={"inline"}>
+        Password was changed for user <Value>{event.target_id}</Value>
+      </div>
+    );
+
+  /**
+   * ZTA — Session events
+   */
+
+  if (event.activity_code == "session.revoked")
+    return (
+      <div className={"inline"}>
+        Session <Value>{event.target_id}</Value> was revoked
+      </div>
+    );
+
+  if (event.activity_code == "session.expired")
+    return (
+      <div className={"inline"}>
+        Session <Value>{event.target_id}</Value> expired
+      </div>
+    );
+
+  /**
+   * ZTA — Tenant events
+   */
+
+  if (event.activity_code == "tenant.created")
+    return (
+      <div className={"inline"}>
+        Tenant <Value>{m.name || event.target_id}</Value> was created
+      </div>
+    );
+
+  if (event.activity_code == "tenant.updated")
+    return (
+      <div className={"inline"}>
+        Tenant <Value>{m.name || event.target_id}</Value> was updated
+      </div>
+    );
+
+  if (event.activity_code == "tenant.deleted")
+    return (
+      <div className={"inline"}>
+        Tenant <Value>{event.target_id}</Value> was deleted
+      </div>
+    );
+
+  /**
+   * ZTA — SDK Key events
+   */
+
+  if (event.activity_code == "sdk_key.created")
+    return (
+      <div className={"inline"}>
+        SDK Key <Value>{m.name || event.target_id}</Value> was created
+      </div>
+    );
+
+  if (event.activity_code == "sdk_key.revoked")
+    return (
+      <div className={"inline"}>
+        SDK Key <Value>{m.name || event.target_id}</Value> was revoked
+      </div>
+    );
+
+  /**
+   * ZTA — Resource events
+   */
+
+  if (event.activity_code == "resource.created")
+    return (
+      <div className={"inline"}>
+        Resource <Value>{m.name || event.target_id}</Value> was created
+        {m.arn && (
+          <>
+            {" "}
+            with ARN <Value>{m.arn}</Value>
+          </>
+        )}
+      </div>
+    );
+
+  if (event.activity_code == "resource.updated")
+    return (
+      <div className={"inline"}>
+        Resource <Value>{m.name || event.target_id}</Value> was updated
+      </div>
+    );
+
+  if (event.activity_code == "resource.deleted")
+    return (
+      <div className={"inline"}>
+        Resource <Value>{m.name || event.target_id}</Value> was deleted
+      </div>
+    );
+
+  /**
+   * ZTA — Access Policy events
+   */
+
+  if (event.activity_code == "access_policy.created")
+    return (
+      <div className={"inline"}>
+        Access policy <Value>{m.name || event.target_id}</Value> was created
+      </div>
+    );
+
+  if (event.activity_code == "access_policy.updated")
+    return (
+      <div className={"inline"}>
+        Access policy <Value>{m.name || event.target_id}</Value> was updated
+      </div>
+    );
+
+  if (event.activity_code == "access_policy.deleted")
+    return (
+      <div className={"inline"}>
+        Access policy <Value>{m.name || event.target_id}</Value> was deleted
+      </div>
+    );
+
+  /**
+   * ZTA — Policy (raw Rego) events
+   */
+
+  if (event.activity_code == "policy.upserted")
+    return (
+      <div className={"inline"}>
+        Policy <Value>{m.name || event.target_id}</Value> was upserted
+      </div>
+    );
+
+  if (event.activity_code == "policy_revision.deleted")
+    return (
+      <div className={"inline"}>
+        Policy revision <Value>{event.target_id}</Value> was deleted
+      </div>
+    );
+
+  /**
+   * ZTA — Edge Node events
+   */
+
+  if (event.activity_code == "edge_node.registered")
+    return (
+      <div className={"inline"}>
+        Edge node <Value>{event.target_id}</Value> was registered
+      </div>
+    );
+
+  /**
+   * ZTA — Posture events
+   */
+
+  if (event.activity_code == "posture_check.created")
+    return (
+      <div className={"inline"}>
+        Posture check <Value>{m.name || event.target_id}</Value> was created
+      </div>
+    );
+
+  /**
    * Reverse Proxy
    */
 

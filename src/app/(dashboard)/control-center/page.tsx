@@ -104,7 +104,7 @@ function ControlCenterView() {
   const { data: groups, isLoading: isGroupsLoading } =
     useFetchApi<Group[]>("/groups");
   const { data: users, isLoading: isUsersLoading } = useFetchApi<User[]>(
-    "/users?service_user=false",
+    "/ui/users",
   );
 
   const isLoading =

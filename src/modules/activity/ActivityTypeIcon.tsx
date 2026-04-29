@@ -2,6 +2,7 @@ import { cn } from "@utils/helpers";
 import {
   ArrowLeftRight,
   Blocks,
+  Building2,
   Cog,
   CreditCardIcon,
   FingerprintIcon,
@@ -10,6 +11,7 @@ import {
   HelpCircleIcon,
   KeyRound,
   Layers3Icon,
+  LinkIcon,
   LogIn,
   MonitorSmartphoneIcon,
   NetworkIcon,
@@ -55,6 +57,15 @@ const ActivityTypeMappings = {
   network: NetworkIcon,
   identityprovider: FingerprintIcon,
   service: ReverseProxyIcon,
+  // ZTA-specific
+  session: LinkIcon,
+  tenant: Building2,
+  sdk_key: KeyRound,
+  access_policy: Shield,
+  policy_rule: Shield,
+  policy_revision: Shield,
+  edge_node: Server,
+  posture_check: ShieldCheck,
 } as const;
 
 export default function ActivityTypeIcon({

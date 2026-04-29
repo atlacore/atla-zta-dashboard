@@ -1,6 +1,6 @@
 import useFetchApi from "@utils/api";
 import React, { useMemo } from "react";
-import type { Peer } from "@/interfaces/Peer";
+import type { PeerSession } from "@/interfaces/Peer";
 
 type Props = {
   children: React.ReactNode;
@@ -8,20 +8,20 @@ type Props = {
 
 const PeerContext = React.createContext(
   {} as {
-    peers: Peer[] | undefined;
+    peers: PeerSession[] | undefined;
     isLoading: boolean;
+    refresh: () => void;
   },
 );
 
 export default function PeersProvider({ children }: Readonly<Props>) {
-  const { data: peers, isLoading } = useFetchApi<Peer[]>("/peers");
+  const { data: peers, isLoading, mutate } = useFetchApi<PeerSession[]>("/ui/peers");
 
-  const data = useMemo(() => {
-    return {
-      peers,
-      isLoading,
-    };
-  }, [peers, isLoading]);
+  const data = useMemo(
+    () => ({ peers, isLoading, refresh: () => mutate() }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [peers, isLoading],
+  );
 
   return <PeerContext.Provider value={data}>{children}</PeerContext.Provider>;
 }

@@ -1,18 +1,14 @@
 "use client";
 
-import { useOidc } from "@axa-fr/react-oidc";
 import Button from "@components/Button";
 import Paragraph from "@components/Paragraph";
-import loadConfig from "@utils/config";
 import { ArrowRightIcon, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import NetBirdIcon from "@/assets/icons/NetBirdIcon";
-
-const config = loadConfig();
+import { auth } from "@/utils/auth";
 
 export default function ErrorPage() {
-  const { logout, isAuthenticated } = useOidc();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState<{
@@ -22,7 +18,6 @@ export default function ErrorPage() {
   } | null>(null);
 
   useEffect(() => {
-    // Get error details from URL params
     const code = searchParams.get("code");
     const message = searchParams.get("message");
     const type = searchParams.get("type");
@@ -37,19 +32,13 @@ export default function ErrorPage() {
   }, [searchParams]);
 
   const handleLogout = () => {
-    // Use the same logout pattern as OIDCError
-    logout("/", { client_id: config.clientId });
+    auth.clearToken();
+    router.push("/login");
   };
 
   const handleRetry = () => {
     router.push("/");
   };
-
-  if (!isAuthenticated) {
-    // If not authenticated, redirect to home
-    router.push("/");
-    return null;
-  }
 
   const isBlockedUser =
     error?.code === 403 && error?.message?.toLowerCase().includes("blocked");

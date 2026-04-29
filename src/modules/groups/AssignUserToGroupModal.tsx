@@ -74,7 +74,7 @@ export const AssignUserToGroupModalContent = ({
   buttonText = "Assign Users",
 }: ContentProps) => {
   const { data: users, isLoading } = useFetchApi<User[]>(
-    "/users?service_user=false",
+    "/ui/users",
   );
   const [selectedRows, setSelectedRows] = useState<RowSelectionState>({});
   const isAllGroup = group.name === "All";

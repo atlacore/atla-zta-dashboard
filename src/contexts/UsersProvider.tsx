@@ -1,17 +1,13 @@
-import { useOidc } from "@axa-fr/react-oidc";
+"use client";
+
 import FullScreenLoading from "@components/ui/FullScreenLoading";
-import useFetchApi from "@utils/api";
-import loadConfig from "@utils/config";
-import React, { useMemo } from "react";
-import { useApplicationContext } from "@/contexts/ApplicationProvider";
-import PermissionsProvider from "@/contexts/PermissionsProvider";
-import { Role, User } from "@/interfaces/User";
+import useFetchApi, { useApiCall } from "@utils/api";
+import { useRouter } from "next/navigation";
+import React from "react";
+import { auth } from "@/utils/auth";
+import { User } from "@/interfaces/User";
 
-const config = loadConfig();
-
-type Props = {
-  children: React.ReactNode;
-};
+type Props = { children: React.ReactNode };
 
 const UsersContext = React.createContext(
   {} as {
@@ -28,30 +24,15 @@ const UserProfileContext = React.createContext(
 );
 
 export default function UsersProvider({ children }: Readonly<Props>) {
-  const { data: users, mutate, isLoading } = useFetchApi<User[]>(
-    "/users?service_user=false",
-  );
-  const { data: serviceUsers, mutate: mutateServiceUsers, isLoading: isLoadingServiceUsers } = useFetchApi<
-    User[]
-  >("/users?service_user=true");
+  // revalidate=false: list doesn't refetch on focus/reconnect; call refresh() explicitly when needed
+  const { data: users, mutate, isLoading } = useFetchApi<User[]>("/ui/users", false, false);
 
   const refresh = () => {
     mutate().then();
-    mutateServiceUsers().then();
   };
 
-  const allUsers = useMemo(() => {
-    return [...(users ?? []), ...(serviceUsers ?? [])];
-  }, [users, serviceUsers]);
-
   return (
-    <UsersContext.Provider
-      value={{
-        users: allUsers,
-        refresh,
-        isLoading: isLoading || isLoadingServiceUsers,
-      }}
-    >
+    <UsersContext.Provider value={{ users, refresh, isLoading }}>
       <UserProfileProvider>{children}</UserProfileProvider>
     </UsersContext.Provider>
   );
@@ -60,40 +41,17 @@ export default function UsersProvider({ children }: Readonly<Props>) {
 export const useUsers = () => React.useContext(UsersContext);
 
 const UserProfileProvider = ({ children }: Props) => {
-  const { users, isLoading: isAllUsersLoading } = useUsers();
-  const {
-    data: user,
-    error,
-    isLoading,
-  } = useFetchApi<User>("/users/current", true, true, true, {
+  // ignoreError=true so 401 doesn't crash; revalidate=false to prevent focus-triggered refetches
+  const { data: user, isLoading } = useFetchApi<User>("/ui/user", true, false, true, {
     key: "user-profile",
   });
 
-  const loggedInUser = useMemo(() => {
-    if (isLoading) return undefined;
-    if (user) return user;
-    if (isAllUsersLoading) return undefined;
-    if (!user || error) {
-      return users?.find((u) => u?.is_current);
-    }
-  }, [user, error, users, isLoading, isAllUsersLoading]);
+  // Only block on the very first load (no data yet), not on background revalidations
+  if (isLoading && !user) return <FullScreenLoading />;
 
-  const data = useMemo(() => {
-    return {
-      loggedInUser,
-    };
-  }, [loggedInUser]);
-
-  // Show loading only when we're still loading and don't have user data
-  if (isLoading || !loggedInUser) {
-    return <FullScreenLoading />;
-  }
-
-  // For blocked or pending approval users, we still need to provide the context
-  // so they can access their user data on the blocked page
   return (
-    <UserProfileContext.Provider value={data}>
-      <PermissionsProvider user={loggedInUser}>{children}</PermissionsProvider>
+    <UserProfileContext.Provider value={{ loggedInUser: user }}>
+      {children}
     </UserProfileContext.Provider>
   );
 };
@@ -102,26 +60,24 @@ export const useUserProfile = () => React.useContext(UserProfileContext);
 
 export const useLoggedInUser = () => {
   const { loggedInUser } = useUserProfile();
-  const { logout: oidcLogout } = useOidc();
-  const { setGlobalApiParams } = useApplicationContext();
-  const isOwner = loggedInUser ? loggedInUser?.role === Role.Owner : false;
-  const isAdmin = loggedInUser ? loggedInUser?.role === Role.Admin : false;
+  const router = useRouter();
 
-  const isUser = !isOwner && !isAdmin;
+  const isOwner = loggedInUser?.role === "owner";
+  const isAdmin = loggedInUser?.role === "admin";
   const isOwnerOrAdmin = isOwner || isAdmin;
+  const isUser = !isOwnerOrAdmin;
 
-  const logout = async () => {
-    return oidcLogout("/", { client_id: config.clientId }).then(() => {
-      setGlobalApiParams?.({});
-    });
+  const logout = () => {
+    auth.clearToken();
+    router.push("/login");
   };
 
+  return { loggedInUser, isOwner, isAdmin, isUser, isOwnerOrAdmin, logout } as const;
+};
+
+export const useUserUpdate = () => {
+  const request = useApiCall<User>("/ui/user");
   return {
-    loggedInUser,
-    isOwner,
-    isAdmin,
-    isUser,
-    isOwnerOrAdmin,
-    logout,
-  } as const;
+    update: (id: string, data: Partial<User>) => request.patch(data, `/${id}`),
+  };
 };

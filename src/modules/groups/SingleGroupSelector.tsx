@@ -125,7 +125,7 @@ type ItemProps = {
 const Item = ({ group, selected }: ItemProps) => {
   const { users } = useUsers();
   const usersOfGroup =
-    users?.filter((user) => user.auto_groups.includes(group.id as string)) ||
+    users?.filter((user) => user.auto_groups?.includes(group.id as string)) ||
     [];
 
   return (

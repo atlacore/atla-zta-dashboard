@@ -42,7 +42,7 @@ type ModalProps = {
 };
 
 export function ServiceUserModalContent({ onSuccess }: Readonly<ModalProps>) {
-  const userRequest = useApiCall<User>("/users");
+  const userRequest = useApiCall<User>("/ui/users");
   const { mutate } = useSWRConfig();
   const [name, setName] = useState("");
   const [role, setRole] = useState("user");
@@ -60,7 +60,7 @@ export function ServiceUserModalContent({ onSuccess }: Readonly<ModalProps>) {
         })
         .then(() => {
           onSuccess && onSuccess();
-          mutate("/users?service_user=true");
+          mutate("/ui/users");
         }),
       loadingMessage: "Creating service user...",
     });

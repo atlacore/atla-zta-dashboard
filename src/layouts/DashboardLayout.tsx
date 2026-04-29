@@ -1,11 +1,9 @@
 "use client";
 
 import "../app/globals.css";
-import { useOidcUser } from "@axa-fr/react-oidc";
 import Button from "@components/Button";
 import { UserAvatar } from "@components/ui/UserAvatar";
 import { cn } from "@utils/helpers";
-import { isNetBirdHosted } from "@utils/netbird";
 import { useIsSm, useIsXs } from "@utils/responsive";
 import { AnimatePresence, motion } from "framer-motion";
 import { XIcon } from "lucide-react";
@@ -18,10 +16,11 @@ import ApplicationProvider, {
 } from "@/contexts/ApplicationProvider";
 import CountryProvider from "@/contexts/CountryProvider";
 import GroupsProvider from "@/contexts/GroupsProvider";
+import PermissionsProvider from "@/contexts/PermissionsProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import UsersProvider from "@/contexts/UsersProvider";
+import { useLoggedInUser } from "@/contexts/UsersProvider";
 import Navigation from "@/layouts/Navigation";
-import { OnboardingProvider } from "@/modules/onboarding/OnboardingProvider";
 import Header, { headerHeight } from "./Header";
 
 export default function DashboardLayout({
@@ -32,14 +31,15 @@ export default function DashboardLayout({
   return (
     <ApplicationProvider>
       <UsersProvider>
-        <AnnouncementProvider>
-          <GroupsProvider>
-            <CountryProvider>
-              {!isNetBirdHosted() && <OnboardingProvider />}
-              <DashboardPageContent>{children}</DashboardPageContent>
-            </CountryProvider>
-          </GroupsProvider>
-        </AnnouncementProvider>
+        <PermissionsProvider>
+          <AnnouncementProvider>
+            <GroupsProvider>
+              <CountryProvider>
+                <DashboardPageContent>{children}</DashboardPageContent>
+              </CountryProvider>
+            </GroupsProvider>
+          </AnnouncementProvider>
+        </PermissionsProvider>
       </UsersProvider>
     </ApplicationProvider>
   );
@@ -48,14 +48,15 @@ export default function DashboardLayout({
 function DashboardPageContent({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { oidcUser: user } = useOidcUser();
+  const { loggedInUser } = useLoggedInUser();
   const { mobileNavOpen, toggleMobileNav } = useApplicationContext();
   const isSm = useIsSm();
   const isXs = useIsXs();
   const { isRestricted } = usePermissions();
+  const { bannerHeight } = useAnnouncement();
 
   const navOpenPageWidth = isSm ? "45%" : isXs ? "60%" : "80%";
-  const { bannerHeight } = useAnnouncement();
+
   return (
     <div className={cn("flex flex-col h-screen", mobileNavOpen && "flex")}>
       {mobileNavOpen && (
@@ -69,12 +70,8 @@ function DashboardPageContent({
             damping: 10,
             mass: 0.4,
           }}
-          animate={{
-            x: 0,
-          }}
-          initial={{
-            x: -200,
-          }}
+          animate={{ x: 0 }}
+          initial={{ x: -200 }}
         >
           <div
             className={
@@ -85,10 +82,10 @@ function DashboardPageContent({
               <UserAvatar size={"small"} />
               <div className="flex flex-col space-y-1">
                 <p className="font-medium leading-none dark:text-gray-300">
-                  {user?.name}
+                  {loggedInUser?.displayName || loggedInUser?.email}
                 </p>
                 <p className="text-xs leading-none dark:text-gray-400">
-                  {user?.email}
+                  {loggedInUser?.email}
                 </p>
               </div>
             </div>
@@ -106,69 +103,42 @@ function DashboardPageContent({
           <Navigation fullWidth />
         </motion.div>
       )}
-      <AnimatePresence mode={"wait"}>
+      {mobileNavOpen ? (
+        // Mobile: animated slide + scale
         <motion.div
-          layout={"position"}
-          className={cn(
-            mobileNavOpen
-              ? "border border-nb-gray-900 shadow-inner overflow-hidden rounded-xl fixed scale-75"
-              : "",
-          )}
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 25,
-            duration: 0.45,
-            mass: 0.1,
-          }}
-          animate={{
-            x: mobileNavOpen ? navOpenPageWidth : 0,
-            width: "100%",
-            height: mobileNavOpen ? "90vh" : "auto",
-            y: mobileNavOpen ? "6.5%" : 0,
-          }}
+          className={"border border-nb-gray-900 shadow-inner overflow-hidden rounded-xl fixed scale-75"}
+          transition={{ type: "spring", stiffness: 500, damping: 25, duration: 0.45, mass: 0.1 }}
+          animate={{ x: navOpenPageWidth, width: "100%", height: "90vh", y: "6.5%" }}
         >
-          {mobileNavOpen && (
-            <motion.div
-              onClick={toggleMobileNav}
-              className={
-                "absolute w-full h-full bg-black z-[999] transition-all opacity-0"
-              }
-              animate={{
-                opacity: 0.2,
-              }}
-            ></motion.div>
-          )}
           <motion.div
-            layout={"position"}
-            className={"relative"}
-            animate={{
-              scale: mobileNavOpen ? 0.75 : 1,
-              height: mobileNavOpen ? "90vh" : "auto",
-              originX: 0,
-              originY: 0,
-            }}
-            transition={{
-              type: "spring",
-              duration: 0.45,
-              stiffness: 500,
-              damping: 25,
-              mass: 0.1,
-            }}
-          >
+            onClick={toggleMobileNav}
+            className={"absolute w-full h-full bg-black z-[999] opacity-0"}
+            animate={{ opacity: 0.2 }}
+          />
+          <div className={"relative"}>
             <Header />
             <div
               className={"flex flex-row flex-grow"}
-              style={{
-                height: `calc(100vh - ${headerHeight + bannerHeight}px)`,
-              }}
+              style={{ height: `calc(100vh - ${headerHeight + bannerHeight}px)` }}
             >
               {!isRestricted && <Navigation hideOnMobile />}
               {children}
             </div>
-          </motion.div>
+          </div>
         </motion.div>
-      </AnimatePresence>
+      ) : (
+        // Desktop: plain div, zero animation overhead
+        <div className={"w-full"}>
+          <Header />
+          <div
+            className={"flex flex-row flex-grow"}
+            style={{ height: `calc(100vh - ${headerHeight + bannerHeight}px)` }}
+          >
+            {!isRestricted && <Navigation hideOnMobile />}
+            {children}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -56,7 +56,7 @@ export const ServiceUsersTableColumns: ColumnDef<User>[] = [
     header: "",
     sortingFn: "text",
     cell: ({ row }) => (
-      <UserActionCell user={row.original} serviceUser={true} />
+      <UserActionCell user={row.original} />
     ),
   },
 ];
@@ -180,7 +180,7 @@ export default function ServiceUsersTable({
           <DataTableRefreshButton
             isDisabled={users?.length == 0}
             onClick={() => {
-              mutate("/users?service_user=true");
+              mutate("/ui/users");
               mutate("/groups");
             }}
           />

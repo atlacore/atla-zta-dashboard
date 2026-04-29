@@ -12,7 +12,7 @@ const config = loadConfig();
 
 const WASM_CONFIG = {
   SCRIPT_PATH: "/wasm_exec.js",
-  WASM_PATH: config.wasmPath,
+  WASM_PATH: (config as any).wasmPath,
   INIT_TIMEOUT: 10000,
   RETRY_DELAY: 100,
 } as const;

@@ -1,9 +1,10 @@
+"use client";
+
 import useFetchApi, { useApiCall } from "@utils/api";
-import { merge, sortBy, unionBy } from "lodash";
-import React, { useEffect, useState } from "react";
+import { sortBy, unionBy } from "lodash";
+import React, { useEffect, useMemo, useState } from "react";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { Group, GroupResource } from "@/interfaces/Group";
-import { Peer } from "@/interfaces/Peer";
+import { Group } from "@/interfaces/Group";
 
 type Props = {
   children: React.ReactNode;
@@ -38,18 +39,27 @@ type ProviderContentProps = {
   children: React.ReactNode;
 };
 
-export function GroupsProviderContent({
-  children,
-}: Readonly<ProviderContentProps>) {
+/** Maps a tenant returned from GET /ui/tenants to the Group shape used across the dashboard. */
+function tenantToGroup(t: { id: string; name: string }): Group {
+  return { id: t.id, name: t.name };
+}
+
+export function GroupsProviderContent({ children }: Readonly<ProviderContentProps>) {
   const { permission } = usePermissions();
 
   const {
-    data: groups,
+    data: rawTenants,
     mutate,
     isLoading,
-  } = useFetchApi<Group[]>("/groups", false, true, permission.groups.read);
-  const groupRequest = useApiCall<Group>("/groups", true);
+  } = useFetchApi<{ id: string; name: string }[]>("/ui/tenants", false, true, permission.groups.read);
+
+  const groupRequest = useApiCall<{ id: string; name: string }>("/ui/tenants", true);
   const [dropdownOptions, setDropdownOptions] = useState<Group[]>([]);
+
+  const groups = useMemo<Group[] | undefined>(
+    () => rawTenants?.map(tenantToGroup),
+    [rawTenants],
+  );
 
   const refresh = () => {
     if (groups && !isLoading) mutate().then();
@@ -63,81 +73,40 @@ export function GroupsProviderContent({
 
   const addDropdownOptions = (options: Group[]) => {
     setDropdownOptions((prev) => {
-      let union = unionBy(options, prev, "name");
-      return sortBy(
-        union.map((item) =>
-          merge({}, prev.find((p) => p.name === item.name) || {}, item),
-        ),
-        "name",
-      );
+      const union = unionBy(options, prev, "name");
+      return sortBy(union, "name");
     });
   };
 
   const updateGroupDropdown = (oldGroupName: string, newGroup: Group) => {
-    setDropdownOptions((prev) => {
-      let updated = prev.map((g) => {
-        if (g.name === oldGroupName) {
-          return newGroup;
-        }
-        return g;
-      });
-      return sortBy(updated, "name");
-    });
+    setDropdownOptions((prev) =>
+      sortBy(
+        prev.map((g) => (g.name === oldGroupName ? newGroup : g)),
+        "name",
+      ),
+    );
   };
 
-  // Update dropdown options when groups change
   useEffect(() => {
     if (!groups) return;
-    const sortedGroups = sortBy([...groups], "name");
-    const dropdownGroups = dropdownOptions.filter((g) => g.keepClientState);
-    const union = unionBy(dropdownGroups, sortedGroups, "name");
-    addDropdownOptions(union);
+    const sorted = sortBy([...groups], "name");
+    const clientOnly = dropdownOptions.filter((g) => g.keepClientState);
+    addDropdownOptions(unionBy(clientOnly, sorted, "name"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groups]);
 
-  const createOrUpdate = async (group: Group) => {
-    let peers = group?.peers?.map((p) => {
-      let isString = typeof p === "string";
-      if (isString) return p;
-      let peer = p as Peer;
-      return peer.id;
-    }) as string[];
-
-    let resources = group?.resources?.map((r) => {
-      let isString = typeof r === "string";
-      if (isString) return r;
-      let resource = r as GroupResource;
-      return resource.id;
-    }) as string[];
-
-    if (group.name === "All") return Promise.resolve(group);
-
-    const groupID =
-      group?.id ?? groups?.find((g) => g.name === group.name)?.id ?? undefined;
-
-    if (groupID) {
-      return groupRequest.put(
-        {
-          name: group.name,
-          peers: peers,
-          resources: resources,
-        },
-        `/${group.id}`,
-      );
-    } else {
-      return groupRequest.post({
-        name: group.name,
-        peers: peers,
-        resources: resources,
-      });
+  const createOrUpdate = async (group: Group): Promise<Group> => {
+    const existing = groups?.find((g) => g.id === group.id || g.name === group.name);
+    if (existing?.id) {
+      return groupRequest
+        .put({ name: group.name }, `/${existing.id}`)
+        .then(tenantToGroup);
     }
+    return groupRequest.post({ name: group.name }).then(tenantToGroup);
   };
 
   const deleteGroupDropdownOption = (name: string) => {
-    setDropdownOptions((prev) => {
-      let updated = prev.filter((g) => g.name !== name);
-      return sortBy(updated, "name");
-    });
+    setDropdownOptions((prev) => sortBy(prev.filter((g) => g.name !== name), "name"));
   };
 
   return (

@@ -18,22 +18,29 @@ const ACTION_COLOR_MAPPING: Record<string, ActionStatus> = {
   // Error actions
   delete: ActionStatus.ERROR,
   revoke: ActionStatus.ERROR,
+  revoked: ActionStatus.ERROR,
   remove: ActionStatus.ERROR,
   block: ActionStatus.ERROR,
   reject: ActionStatus.ERROR,
+  failed: ActionStatus.ERROR,
 
   // Warning actions
   overuse: ActionStatus.WARNING,
   expire: ActionStatus.WARNING,
+  expired: ActionStatus.WARNING,
 
   // Info actions
   update: ActionStatus.INFO,
+  updated: ActionStatus.INFO,
   enable: ActionStatus.INFO,
   disable: ActionStatus.INFO,
   rename: ActionStatus.INFO,
   unblock: ActionStatus.INFO,
   login: ActionStatus.INFO,
   change: ActionStatus.INFO,
+  changed: ActionStatus.INFO,
+  upserted: ActionStatus.INFO,
+  registered: ActionStatus.SUCCESS,
 };
 
 export function getColorFromCode(code: string): string {

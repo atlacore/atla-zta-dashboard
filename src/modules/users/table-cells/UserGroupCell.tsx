@@ -18,7 +18,7 @@ export default function UserGroupCell({ user }: Readonly<Props>) {
   const [modal, setModal] = useState(false);
   const { mutate } = useSWRConfig();
   const { permission } = usePermissions();
-  const userRequest = useApiCall<User>("/users");
+  const userRequest = useApiCall<User>("/ui/users");
 
   const allGroups = useMemo(() => {
     if (isLoading) return [];
@@ -59,7 +59,7 @@ export default function UserGroupCell({ user }: Readonly<Props>) {
         )
         .then(() => {
           setModal(false);
-          mutate(`/users?service_user=false`);
+          mutate("/ui/users");
           mutate(`/integrations/msp/switcher`);
           mutate("/groups");
         }),

@@ -6,19 +6,52 @@ import Paragraph from "@components/Paragraph";
 import { RestrictedAccess } from "@components/ui/RestrictedAccess";
 import { usePortalElement } from "@hooks/usePortalElement";
 import useFetchApi from "@utils/api";
+import dayjs from "dayjs";
 import { ExternalLinkIcon, LogsIcon } from "lucide-react";
-import React from "react";
+import { usePathname } from "next/navigation";
+import React, { useMemo } from "react";
+import { DateRange } from "react-day-picker";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { ActivityEvent } from "@/interfaces/ActivityEvent";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
+import {
+  BackendAuditEvent,
+  transformAuditEvents,
+} from "@/interfaces/ActivityEvent";
 import PageContainer from "@/layouts/PageContainer";
 import ActivityTable from "@/modules/activity/ActivityTable";
 
+const defaultFromDate = dayjs().subtract(14, "day").toDate();
+const defaultToDate = dayjs().toDate();
+
 export default function Activity() {
   const { permission } = usePermissions();
+  const path = usePathname();
 
-  const { data: events, isLoading } =
-    useFetchApi<ActivityEvent[]>("/events/audit");
+  // Date range persisted in localStorage — shared with ActivityTable
+  const [dateRange, setDateRange] = useLocalStorage<DateRange | undefined>(
+    "netbird-table-range" + path,
+    { from: defaultFromDate, to: defaultToDate },
+  );
+
+  // Build URL with server-side from/to query params
+  const eventsUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (dateRange?.from)
+      params.set("from", dayjs(dateRange.from).format("YYYY-MM-DD"));
+    if (dateRange?.to)
+      params.set("to", dayjs(dateRange.to).add(1, "day").format("YYYY-MM-DD"));
+    const qs = params.toString();
+    return `/ui/events${qs ? `?${qs}` : ""}`;
+  }, [dateRange]);
+
+  const { data: rawEvents, isLoading, mutate } =
+    useFetchApi<BackendAuditEvent[]>(eventsUrl);
+
+  const events = useMemo(
+    () => (rawEvents ? transformAuditEvents(rawEvents) : undefined),
+    [rawEvents],
+  );
 
   const { ref: headingRef, portalTarget } =
     usePortalElement<HTMLHeadingElement>();
@@ -57,6 +90,9 @@ export default function Activity() {
           events={events}
           isLoading={isLoading}
           headingTarget={portalTarget}
+          dateRange={dateRange}
+          onDateRangeChange={setDateRange}
+          onRefresh={() => mutate()}
         />
       </RestrictedAccess>
     </PageContainer>

@@ -758,7 +758,7 @@ const UsersCounter = ({
   selected: boolean;
 }) => {
   const usersOfGroup =
-    users?.filter((user) => user.auto_groups.includes(group.id as string)) ||
+    users?.filter((user) => user.auto_groups?.includes(group.id as string)) ||
     [];
 
   if (usersOfGroup.length === 0)

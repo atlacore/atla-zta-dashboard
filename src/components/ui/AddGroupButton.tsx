@@ -1,6 +1,4 @@
 import Button from "@components/Button";
-import HelpText from "@components/HelpText";
-import InlineLink from "@components/InlineLink";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
 import {
@@ -10,20 +8,18 @@ import {
   ModalFooter,
   ModalTrigger,
 } from "@components/modal/Modal";
-import { ExternalLinkIcon, FolderGit2Icon, PlusCircle } from "lucide-react";
+import { FolderGit2Icon, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useSWRConfig } from "swr";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { Group } from "@/interfaces/Group";
 import { useApiCall } from "@/utils/api";
 import ModalHeader from "../modal/ModalHeader";
 import { notify } from "../Notification";
-import Paragraph from "../Paragraph";
 import Separator from "../Separator";
 
 export const AddGroupButton = () => {
-  const create = useApiCall<Group>("/groups", true).post;
+  const create = useApiCall<{ id: string; name: string }>("/ui/tenants", true).post;
   const { mutate } = useSWRConfig();
   const [name, setName] = useState<string>("");
   const [open, setOpen] = useState(false);
@@ -38,7 +34,7 @@ export const AddGroupButton = () => {
       promise: create({ name }).then((g) => {
         setOpen(false);
         setName("");
-        mutate("/groups");
+        mutate("/ui/tenants");
         router.push(`/group?id=${g?.id}`);
       }),
     });
@@ -61,45 +57,29 @@ export const AddGroupButton = () => {
           <ModalHeader
             icon={<FolderGit2Icon size={18} />}
             title="Create Group"
-            description="Create a group to manage and organize access in your network"
+            description="Create a group to organize and manage access in your network"
             color="netbird"
           />
           <Separator />
           <div className={"px-8 flex-col flex gap-6 py-6"}>
             <div>
               <Label>Name</Label>
-              <HelpText>
-                Set an easily identifiable name for your group
-              </HelpText>
               <Input
                 tabIndex={0}
                 placeholder={"e.g., Developers"}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && name && createGroup()}
               />
             </div>
           </div>
           <ModalFooter className={"items-center"}>
-            <div className={"w-full"}>
-              <Paragraph className={"text-sm mt-auto"}>
-                Learn more about
-                <InlineLink
-                  href={"https://docs.netbird.io/how-to/manage-network-access"}
-                  target={"_blank"}
-                >
-                  Groups
-                  <ExternalLinkIcon size={12} />
-                </InlineLink>
-              </Paragraph>
-            </div>
             <div className={"flex gap-3 w-full justify-end"}>
               <ModalClose asChild={true}>
                 <Button variant={"secondary"}>Cancel</Button>
               </ModalClose>
-
               <Button
                 variant={"primary"}
-                data-cy={"submit-route"}
                 disabled={!name}
                 onClick={createGroup}
               >

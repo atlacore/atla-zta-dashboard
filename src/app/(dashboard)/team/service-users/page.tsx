@@ -22,7 +22,7 @@ const ServiceUsersTable = lazy(
 export default function ServiceUsers() {
   const { permission } = usePermissions();
   const { data: users, isLoading } = useFetchApi<User[]>(
-    "/users?service_user=true",
+    "/ui/users",
   );
 
   const { ref: headingRef, portalTarget } =

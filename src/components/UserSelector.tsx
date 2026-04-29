@@ -27,7 +27,7 @@ interface MultiSelectProps {
 const searchPredicate = (u: User, query: string) => {
   const lowerCaseQuery = query.toLowerCase();
   try {
-    if (u.name.toLowerCase().includes(lowerCaseQuery)) return true;
+    if (u.name?.toLowerCase().includes(lowerCaseQuery)) return true;
     return !!u?.email?.toLowerCase().includes(lowerCaseQuery);
   } catch (e) {
     return false;

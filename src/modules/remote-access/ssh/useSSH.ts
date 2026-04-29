@@ -1,5 +1,5 @@
-import { useOidcAccessToken } from "@axa-fr/react-oidc";
 import { useCallback, useRef, useState } from "react";
+import { auth } from "@/utils/auth";
 
 interface SSHConfig {
   hostname: string;
@@ -31,7 +31,7 @@ export const useSSH = (client: any) => {
   const [config, setConfig] = useState<SSHConfig | null>(null);
   const session = useRef<SSHConnection | null>(null);
   const [error, setError] = useState("");
-  const { accessToken } = useOidcAccessToken();
+  const accessToken = auth.getToken();
 
   const connect = useCallback(
     async (config: SSHConfig): Promise<SSHStatus> => {
