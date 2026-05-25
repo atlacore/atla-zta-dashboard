@@ -15,7 +15,7 @@ const PeerContext = React.createContext(
 );
 
 export default function PeersProvider({ children }: Readonly<Props>) {
-  const { data: peers, isLoading, mutate } = useFetchApi<PeerSession[]>("/ui/peers");
+   const { data: peers, isLoading, mutate } = useFetchApi<PeerSession[]>("/ui/peers");
 
   const data = useMemo(
     () => ({ peers, isLoading, refresh: () => mutate() }),

@@ -39,7 +39,7 @@ function CreateSDKKeyModal({ open, onOpenChange, onCreated }: CreateSDKKeyModalP
   const [name, setName] = useState("");
   const [rawKey, setRawKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const sdkKeyRequest = useApiCall<SDKKeyCreateResponse>("/ui/sdk-key");
+  const sdkKeyRequest = useApiCall<SDKKeyCreateResponse>("/ui/sdk-keys");
 
   const handleCreate = () => {
     if (!name.trim()) return;
@@ -146,7 +146,7 @@ export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: 
   const { permission } = usePermissions();
   const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
-  const sdkKeyRequest = useApiCall<{ status: string }>("/ui/sdk-key");
+  const sdkKeyRequest = useApiCall<{ status: string }>("/ui/sdk-keys");
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,

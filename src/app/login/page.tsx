@@ -34,7 +34,7 @@ function LoginForm() {
 
     try {
       const res = await fetch(
-        `${(config as any).apiOrigin}/api/ui/auth/login`,
+        `${(config as any).apiOrigin}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

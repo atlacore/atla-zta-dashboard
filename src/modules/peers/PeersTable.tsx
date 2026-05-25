@@ -25,7 +25,7 @@ function RevokeButton({
   onRevoked: () => void;
 }) {
   const { permission } = usePermissions();
-  const peerRequest = useApiCall<{ status: string }>("/ui/peer/" + peer.id);
+  const peerRequest = useApiCall<{ status: string }>("/ui/peers/" + peer.id);
 
   const revoke = () => {
     const promise = peerRequest.del().then(() => onRevoked());
