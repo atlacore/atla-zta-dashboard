@@ -3,6 +3,6 @@ import type { Metadata } from "next";
 import BlankLayout from "@/layouts/BlankLayout";
 
 export const metadata: Metadata = {
-  title: `Custom Domains - Reverse Proxy - ${globalMetaTitle}`,
+  title: `Tenants - ${globalMetaTitle}`,
 };
 export default BlankLayout;

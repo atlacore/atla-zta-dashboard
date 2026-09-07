@@ -42,7 +42,7 @@ export default function GroupBadge({
 
   const handleGroupPageRedirect = () => {
     if (!group?.id) return;
-    let redirectUrl = `/group?id=${group.id}`;
+    let redirectUrl = `/tenant?id=${group.id}`;
     if (redirectGroupTab) {
       redirectUrl += `&tab=${encodeURIComponent(redirectGroupTab)}`;
     }

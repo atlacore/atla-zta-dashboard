@@ -32,16 +32,28 @@ import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { Resource, ResourceCreateRequest, ResourceKind, ResourceUpdateRequest } from "@/interfaces/Resource";
-import HelpText from "@components/HelpText";
+import {
+  Resource,
+  ResourceCreateRequest,
+  ResourceCredProfile,
+  ResourceKind,
+  ResourceUpdateRequest,
+} from "@/interfaces/Resource";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const KIND_OPTIONS: { value: ResourceKind; label: string }[] = [
-  { value: "wg", label: "WireGuard (wg)" },
-  { value: "ssh", label: "SSH" },
-  { value: "db", label: "Database (db)" },
-  { value: "mtls", label: "mTLS" },
+  { value: "server", label: "Server" },
+  { value: "db", label: "Database" },
+  { value: "web", label: "Web" },
+  { value: "k8s", label: "Kubernetes" },
+];
+
+const CRED_PROFILE_OPTIONS: { value: ResourceCredProfile; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "ssh_cert", label: "SSH certificate" },
+  { value: "mtls_cert", label: "mTLS certificate" },
+  { value: "db_creds", label: "Database credentials" },
 ];
 
 // ── Create Modal ──────────────────────────────────────────────────────────────
@@ -54,30 +66,29 @@ type CreateResourceModalProps = {
 
 function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceModalProps) {
   const [name, setName] = useState("");
-  const [kind, setKind] = useState<ResourceKind>("wg");
+  const [kind, setKind] = useState<ResourceKind>("server");
+  const [credProfile, setCredProfile] = useState<ResourceCredProfile>("none");
   const [region, setRegion] = useState("");
   const [description, setDescription] = useState("");
-  const [configJson, setConfigJson] = useState("{}");
-  const [jsonError, setJsonError] = useState("");
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("");
   const resourceRequest = useApiCall<Resource>("/ui/resources");
 
   const handleCreate = () => {
-    let config: Record<string, unknown>;
-    try {
-      config = JSON.parse(configJson);
-      setJsonError("");
-    } catch {
-      setJsonError("Invalid JSON");
-      return;
-    }
-
     const body: ResourceCreateRequest = {
       name: name.trim(),
       kind,
+      credProfile,
       region: region.trim(),
       description: description.trim() || undefined,
-      config,
     };
+    // config is opaque Vault storage - only send it if the operator filled something in
+    if (host.trim() || port.trim()) {
+      body.config = {
+        ...(host.trim() && { host: host.trim() }),
+        ...(port.trim() && { port: Number(port) }),
+      };
+    }
 
     const promise = resourceRequest.post(body).then(() => {
       onCreated();
@@ -93,11 +104,12 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
 
   const handleClose = () => {
     setName("");
-    setKind("wg");
+    setKind("server");
+    setCredProfile("none");
     setRegion("");
     setDescription("");
-    setConfigJson("{}");
-    setJsonError("");
+    setHost("");
+    setPort("");
     onOpenChange(false);
   };
 
@@ -140,6 +152,21 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
             </Select>
           </div>
           <div>
+            <Label>Credential profile</Label>
+            <Select value={credProfile} onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CRED_PROFILE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
             <Label>Region</Label>
             <Input
               value={region}
@@ -155,19 +182,24 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
               placeholder={"Optional"}
             />
           </div>
-          <div>
-            <Label>Config (JSON)</Label>
-            <HelpText>
-              Resource-specific config stored in Vault (host, port, etc.).
-            </HelpText>
-            <textarea
-              className={
-                "w-full bg-nb-gray-900/30 border border-nb-gray-900 rounded-md px-3 py-2 font-mono text-xs text-nb-gray-100 resize-y min-h-[80px] focus:outline-none"
-              }
-              value={configJson}
-              onChange={(e) => setConfigJson(e.target.value)}
-            />
-            {jsonError && <p className={"text-xs text-red-400 mt-1"}>{jsonError}</p>}
+          <div className={"grid grid-cols-2 gap-4"}>
+            <div>
+              <Label>Host</Label>
+              <Input
+                value={host}
+                onChange={(e) => setHost(e.target.value)}
+                placeholder={"Optional — stored in Vault"}
+              />
+            </div>
+            <div>
+              <Label>Port</Label>
+              <Input
+                value={port}
+                onChange={(e) => setPort(e.target.value)}
+                placeholder={"Optional"}
+                type={"number"}
+              />
+            </div>
           </div>
         </div>
 
@@ -196,10 +228,11 @@ function EditResourceModal({ resource, open, onOpenChange, onSaved }: EditResour
   const [name, setName] = useState(resource.name);
   const [region, setRegion] = useState(resource.region);
   const [description, setDescription] = useState(resource.description ?? "");
+  const [credProfile, setCredProfile] = useState<ResourceCredProfile>(resource.credProfile);
   const resourceRequest = useApiCall<Resource>(`/ui/resources/${resource.id}`);
 
   const handleSave = () => {
-    const body: ResourceUpdateRequest = {};
+    const body: ResourceUpdateRequest = { credProfile };
     if (name.trim()) body.name = name.trim();
     if (region.trim()) body.region = region.trim();
     if (description.trim()) body.description = description.trim();
@@ -239,6 +272,21 @@ function EditResourceModal({ resource, open, onOpenChange, onSaved }: EditResour
           <div>
             <Label>Description</Label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div>
+            <Label>Credential profile</Label>
+            <Select value={credProfile} onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CRED_PROFILE_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <DialogFooter>
@@ -318,6 +366,17 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
       cell: ({ row }) => (
         <span className={"font-mono text-xs bg-nb-gray-900 rounded px-2 py-1"}>
           {row.original.kind}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "credProfile",
+      header: ({ column }) => <DataTableHeader column={column}>Cred Profile</DataTableHeader>,
+      sortingFn: "text",
+      cell: ({ row }) => (
+        <span className={"text-sm text-nb-gray-300"}>
+          {CRED_PROFILE_OPTIONS.find((o) => o.value === row.original.credProfile)?.label ??
+            row.original.credProfile}
         </span>
       ),
     },

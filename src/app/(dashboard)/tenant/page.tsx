@@ -18,18 +18,18 @@ import { Group } from "@/interfaces/Group";
 import PageContainer from "@/layouts/PageContainer";
 import { EditGroupNameModal } from "@/modules/groups/EditGroupNameModal";
 
-export default function GroupPage() {
+export default function TenantPage() {
   const queryParameter = useSearchParams();
   const { permission } = usePermissions();
   const groupId = queryParameter.get("id");
   const { groups, isLoading } = useGroups();
 
-  useRedirect("/groups", false, !groupId);
+  useRedirect("/tenants", false, !groupId);
 
   if (!permission.groups.read) {
     return (
       <PageContainer>
-        <RestrictedAccess page={"Group Information"} />
+        <RestrictedAccess page={"Tenant Information"} />
       </PageContainer>
     );
   }
@@ -41,9 +41,9 @@ export default function GroupPage() {
   if (!group) {
     return (
       <PageNotFound
-        title={"Group not found"}
+        title={"Tenant not found"}
         description={
-          "The group you are attempting to access cannot be found. It may have been deleted."
+          "The tenant you are attempting to access cannot be found. It may have been deleted."
         }
       />
     );
@@ -66,10 +66,10 @@ function TenantDetail({ group }: { group: Group }) {
     });
 
     notify({
-      title: "Rename Group",
-      description: "Group successfully renamed to " + name,
+      title: "Rename Tenant",
+      description: "Tenant successfully renamed to " + name,
       promise,
-      loadingMessage: "Renaming group...",
+      loadingMessage: "Renaming tenant...",
     });
 
     return promise;
@@ -88,8 +88,8 @@ function TenantDetail({ group }: { group: Group }) {
       <div className={"p-default py-6 mb-4"}>
         <Breadcrumbs>
           <Breadcrumbs.Item
-            href={"/groups"}
-            label={"Groups"}
+            href={"/tenants"}
+            label={"Tenants"}
             icon={<FolderGit2Icon size={14} />}
           />
           <Breadcrumbs.Item label={group.name} active />
@@ -110,7 +110,7 @@ function TenantDetail({ group }: { group: Group }) {
 
         <div className={"mt-4 text-sm text-nb-gray-400"}>
           <p>
-            <span className={"font-medium text-nb-gray-300"}>Group ID:</span>{" "}
+            <span className={"font-medium text-nb-gray-300"}>Tenant ID:</span>{" "}
             <span className={"font-mono"}>{group.id}</span>
           </p>
         </div>

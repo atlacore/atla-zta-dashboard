@@ -12,7 +12,7 @@ import PageContainer from "@/layouts/PageContainer";
 
 const GroupsTable = lazy(() => import("@/modules/groups/table/GroupsTable"));
 
-export default function GroupsPage() {
+export default function TenantsPage() {
   const { permission } = usePermissions();
   const { ref: headingRef, portalTarget } =
     usePortalElement<HTMLHeadingElement>();
@@ -22,19 +22,18 @@ export default function GroupsPage() {
       <div className={"p-default py-6"}>
         <Breadcrumbs>
           <Breadcrumbs.Item
-            href={"/groups"}
-            label={"Groups"}
+            href={"/tenants"}
+            label={"Tenants"}
             icon={<FolderGit2Icon size={14} />}
             active
           />
         </Breadcrumbs>
-        <h1 ref={headingRef}>Groups</h1>
+        <h1 ref={headingRef}>Tenants</h1>
         <Paragraph>
-          Manage the tenant groups of your organization. Groups are used to
-          organize access policies and resources.
+          Manage the tenants of your organization.
         </Paragraph>
       </div>
-      <RestrictedAccess hasAccess={permission.groups.read} page={"Groups"}>
+      <RestrictedAccess hasAccess={permission.groups.read} page={"Tenants"}>
         <Suspense fallback={<SkeletonTable />}>
           <GroupsTable headingTarget={portalTarget} />
         </Suspense>

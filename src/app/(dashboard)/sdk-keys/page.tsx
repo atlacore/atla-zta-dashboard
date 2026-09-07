@@ -28,7 +28,7 @@ export default function SetupKeys() {
       <div className={"p-default py-6"}>
         <Breadcrumbs>
           <Breadcrumbs.Item
-            href={"/setup-keys"}
+            href={"/sdk-keys"}
             label={"SDK Keys"}
             icon={<SetupKeysIcon size={13} />}
           />
