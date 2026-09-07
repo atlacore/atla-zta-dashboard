@@ -27,6 +27,12 @@ export type SetupKey = SDKKey & {
   allow_extra_dns_labels?: boolean;
 };
 
+/** POST /ui/sdk-keys body */
+export interface SDKKeyCreateRequest {
+  name: string;
+  expiresAt?: string;
+}
+
 /** Returned once on key creation — raw key is never shown again. */
 export interface SDKKeyCreateResponse {
   id: string;

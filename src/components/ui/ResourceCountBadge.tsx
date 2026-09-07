@@ -21,7 +21,7 @@ export default function ResourceCountBadge({
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     if (disableRedirect) return;
-    if (hasId) router.push(`/group?id=${group?.id}&tab=resources`);
+    if (hasId) router.push(`/tenant?id=${group?.id}&tab=resources`);
   };
 
   return (

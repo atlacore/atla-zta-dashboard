@@ -6,21 +6,20 @@ import SkeletonTable from "@components/skeletons/SkeletonTable";
 import { RestrictedAccess } from "@components/ui/RestrictedAccess";
 import { usePortalElement } from "@hooks/usePortalElement";
 import useFetchApi from "@utils/api";
-import { ServerIcon } from "lucide-react";
 import React, { lazy, Suspense } from "react";
-import DNSIcon from "@/assets/icons/DNSIcon";
+import SetupKeysIcon from "@/assets/icons/SetupKeysIcon";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { DNSNameserverGroup } from "@/interfaces/DNSNameserverGroup";
+import { SDKKey } from "@/interfaces/SetupKey";
 import PageContainer from "@/layouts/PageContainer";
 
-const NameserverGroupsTable = lazy(
-  () => import("@/modules/dns/nameservers/NameserverGroupsTable"),
+const SetupKeysTable = lazy(
+  () => import("@/modules/setup-keys/SetupKeysTable"),
 );
 
-export default function NameserversPage() {
+export default function SetupKeys() {
+  const { data: sdkKeys, isLoading } = useFetchApi<SDKKey[]>("/ui/sdk-keys");
   const { permission } = usePermissions();
-  const { data: groups, isLoading } =
-    useFetchApi<DNSNameserverGroup[]>("/ui/dns/nameservers");
+
   const { ref: headingRef, portalTarget } =
     usePortalElement<HTMLHeadingElement>();
 
@@ -28,27 +27,27 @@ export default function NameserversPage() {
     <PageContainer>
       <div className={"p-default py-6"}>
         <Breadcrumbs>
-          <Breadcrumbs.Item label={"DNS"} icon={<DNSIcon size={13} />} />
           <Breadcrumbs.Item
-            href={"/dns/nameservers"}
-            label={"Nameservers"}
-            active
-            icon={<ServerIcon size={14} />}
+            href={"/sdk-keys"}
+            label={"SDK Keys"}
+            icon={<SetupKeysIcon size={13} />}
           />
         </Breadcrumbs>
-        <h1 ref={headingRef}>Nameservers</h1>
+        <h1 ref={headingRef}>SDK Keys</h1>
         <Paragraph>
-          Nameserver groups back the authoritative DNS zones served to
-          devices on the overlay.
+          SDK keys allow programmatic access to the Atla ZTA API. The raw key
+          is shown only once on creation — store it securely.
         </Paragraph>
       </div>
-
-      <RestrictedAccess page={"Nameservers"} hasAccess={permission?.nameservers?.read}>
+      <RestrictedAccess
+        page={"SDK Keys"}
+        hasAccess={permission.setup_keys.read}
+      >
         <Suspense fallback={<SkeletonTable />}>
-          <NameserverGroupsTable
-            isLoading={isLoading}
+          <SetupKeysTable
             headingTarget={portalTarget}
-            groups={groups}
+            setupKeys={sdkKeys}
+            isLoading={isLoading}
           />
         </Suspense>
       </RestrictedAccess>

@@ -21,7 +21,6 @@ import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { SmallBadge } from "@components/ui/SmallBadge";
 import { BoxIcon, NetworkIcon, ServerIcon } from "lucide-react";
 import * as React from "react";
-import ReverseProxyIcon from "@/assets/icons/ReverseProxyIcon";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
 
 type Props = {
@@ -103,7 +102,7 @@ export default function Navigation({
                 <SidebarItem
                   icon={<SetupKeysIcon />}
                   label="SDK Keys"
-                  href={"/setup-keys"}
+                  href={"/sdk-keys"}
                   visible={permission.setup_keys.read}
                 />
                 <SidebarItem
@@ -145,56 +144,14 @@ export default function Navigation({
                     visible={permission.policies.read}
                   />
                   <SidebarItem
-                    label="Groups"
+                    label="Tenants"
                     isChild
-                    href={"/groups"}
-                    visible={permission.policies.read}
-                  />
-                  <SidebarItem
-                    label="Posture Checks"
-                    isChild
-                    href={"/posture-checks"}
-                    exactPathMatch={true}
+                    href={"/tenants"}
                     visible={permission.policies.read}
                   />
                 </SidebarItem>
 
                 <NetworkNavigation />
-
-                <SidebarItem
-                  icon={<ReverseProxyIcon size={16} />}
-                  labelClassName={"pr-0"}
-                  label={
-                    <div className={"flex items-center gap-2"}>
-                      Reverse Proxy
-                      <SmallBadge
-                        text={"Beta"}
-                        variant={"sky"}
-                        className={"text-[8px] leading-none py-[3px] px-[5px]"}
-                        textClassName={"top-0"}
-                      />
-                    </div>
-                  }
-                  href={"/reverse-proxy"}
-                  collapsible
-                  exactPathMatch={false}
-                  visible={permission?.services?.read}
-                >
-                  <SidebarItem
-                    label="Services"
-                    isChild
-                    href={"/reverse-proxy/services"}
-                    exactPathMatch={true}
-                    visible={permission?.services?.read}
-                  />
-                  <SidebarItem
-                    label="Custom Domains"
-                    isChild
-                    href={"/reverse-proxy/custom-domains"}
-                    exactPathMatch={true}
-                    visible={permission?.services?.read}
-                  />
-                </SidebarItem>
 
                 <SidebarItem
                   icon={<DNSIcon />}
@@ -216,9 +173,9 @@ export default function Navigation({
                     visible={permission?.dns?.read}
                   />
                   <SidebarItem
-                    label="DNS Settings"
+                    label="Secure Web Gateway"
                     isChild
-                    href={"/dns/settings"}
+                    href={"/dns/swg"}
                     visible={permission.dns.read}
                   />
                 </SidebarItem>
@@ -299,13 +256,6 @@ const ActivityNavigationItem = () => {
         label="Audit Events"
         href={"/events/audit"}
         isChild
-        exactPathMatch={true}
-        visible={permission.events.read}
-      />
-      <SidebarItem
-        label="Proxy Events"
-        isChild
-        href={"/events/proxy"}
         exactPathMatch={true}
         visible={permission.events.read}
       />

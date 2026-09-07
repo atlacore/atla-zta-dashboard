@@ -42,7 +42,7 @@ export default function PeerCountBadge({
 
   const onClick = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (canRedirect) router.push(`/group?id=${group?.id}&tab=peers`);
+    if (canRedirect) router.push(`/tenant?id=${group?.id}&tab=peers`);
   };
 
   const resourcesCount = group?.resources_count ?? 0;

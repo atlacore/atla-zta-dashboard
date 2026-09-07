@@ -35,7 +35,7 @@ export const AddGroupButton = () => {
         setOpen(false);
         setName("");
         mutate("/ui/tenants");
-        router.push(`/group?id=${g?.id}`);
+        router.push(`/tenant?id=${g?.id}`);
       }),
     });
   };
