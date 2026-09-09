@@ -32,6 +32,7 @@ import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
+import { buildResourceArn } from "@/utils/arn";
 import {
   Resource,
   ResourceCreateRequest,
@@ -389,17 +390,19 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
       ),
     },
     {
-      accessorKey: "arn",
+      id: "arn",
       header: ({ column }) => <DataTableHeader column={column}>ARN</DataTableHeader>,
-      sortingFn: "text",
-      cell: ({ row }) => (
-        <span
-          className={"font-mono text-xs text-nb-gray-400 truncate max-w-[260px] block"}
-          title={row.original.arn}
-        >
-          {row.original.arn}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const arn = buildResourceArn(row.original);
+        return (
+          <span
+            className={"font-mono text-xs text-nb-gray-400 truncate max-w-[260px] block"}
+            title={arn}
+          >
+            {arn}
+          </span>
+        );
+      },
     },
     {
       accessorKey: "createdAt",

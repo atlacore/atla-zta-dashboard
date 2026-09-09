@@ -10,7 +10,6 @@ export interface Resource {
   credProfile: ResourceCredProfile;
   region: string;
   description?: string;
-  arn: string;
   createdAt: string;
 }
 

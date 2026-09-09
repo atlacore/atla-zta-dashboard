@@ -1,16 +1,14 @@
 import { notify } from "@components/Notification";
 import SkeletonPeerDetail from "@components/skeletons/SkeletonPeerDetail";
 import { useApiCall } from "@utils/api";
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useGroups } from "@/contexts/GroupsProvider";
-import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useUsers } from "@/contexts/UsersProvider";
 import { Group, GroupPeer } from "@/interfaces/Group";
 import { Peer } from "@/interfaces/Peer";
 import { User } from "@/interfaces/User";
-import { PeerSSHInstructions } from "@/modules/peer/PeerSSHInstructions";
 
 type Props = {
   children: React.ReactNode;
@@ -31,8 +29,6 @@ const PeerContext = React.createContext(
       approval_required?: boolean;
       ip?: string;
     }) => Promise<Peer>;
-    toggleSSH: (newState: boolean) => Promise<void>;
-    setSSHInstructionsModal: (open: boolean) => void;
     deletePeer: () => void;
     isLoading: boolean;
   },
@@ -48,8 +44,6 @@ export default function PeerProvider({
   const peerRequest = useApiCall<Peer>("/peers", true);
   const { confirm } = useDialog();
   const { mutate } = useSWRConfig();
-  const { permission } = usePermissions();
-  const [sshInstructionsModal, setSSHInstructionsModal] = useState(false);
 
   const deletePeer = async () => {
     const choice = await confirm({
@@ -104,23 +98,6 @@ export default function PeerProvider({
     );
   };
 
-  const toggleSSH = async (enable: boolean) => {
-    if (!permission.peers.update) return;
-    notify({
-      title: peer.name,
-      description: enable
-        ? "SSH Access successfully enabled"
-        : "SSH Access successfully disabled",
-      promise: update({ ssh: enable }).then(() => {
-        isPeerDetailPage ? mutate(`/peers/${peer.id}`) : mutate("/peers");
-        setSSHInstructionsModal(false);
-      }),
-      loadingMessage: enable
-        ? "Enabling SSH Access..."
-        : "Disabling SSH Access...",
-    });
-  };
-
   return !isLoading ? (
     <PeerContext.Provider
       value={{
@@ -128,24 +105,10 @@ export default function PeerProvider({
         peerGroups,
         user,
         update,
-        toggleSSH,
-        setSSHInstructionsModal,
         deletePeer,
         isLoading,
       }}
     >
-      {sshInstructionsModal && (
-        <PeerSSHInstructions
-          open={sshInstructionsModal}
-          onOpenChange={setSSHInstructionsModal}
-          peer={peer}
-          onSuccess={() => {
-            mutate(`/peers/${peer.id}`);
-            setSSHInstructionsModal(false);
-          }}
-        />
-      )}
-
       {children}
     </PeerContext.Provider>
   ) : isPeerDetailPage ? (

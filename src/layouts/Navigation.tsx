@@ -7,7 +7,6 @@ import ControlCenterIcon from "@/assets/icons/ControlCenterIcon";
 import DNSIcon from "@/assets/icons/DNSIcon";
 import DocsIcon from "@/assets/icons/DocsIcon";
 import PeerIcon from "@/assets/icons/PeerIcon";
-import SettingsIcon from "@/assets/icons/SettingsIcon";
 import SetupKeysIcon from "@/assets/icons/SetupKeysIcon";
 import TeamIcon from "@/assets/icons/TeamIcon";
 import SidebarItem from "@/components/SidebarItem";
@@ -130,15 +129,22 @@ export default function Navigation({
                   visible={permission.policies.read}
                 >
                   <SidebarItem
-                    label="Policies"
-                    href={"/access-control"}
+                    label="Access Policies"
+                    href={"/access-policies"}
                     isChild
                     exactPathMatch={true}
                     visible={permission.policies.read}
                   />
                   <SidebarItem
-                    label="Access Policies"
-                    href={"/access-policies"}
+                    label="Policies"
+                    href={"/policies"}
+                    isChild
+                    exactPathMatch={true}
+                    visible={permission.policies.read}
+                  />
+                  <SidebarItem
+                    label="Simulator"
+                    href={"/access-simulator"}
                     isChild
                     exactPathMatch={true}
                     visible={permission.policies.read}
@@ -202,13 +208,6 @@ export default function Navigation({
               </SidebarItemGroup>
 
               <SidebarItemGroup>
-                <SidebarItem
-                  icon={<SettingsIcon />}
-                  label="Settings"
-                  href={"/settings"}
-                  exactPathMatch={true}
-                  visible={permission.settings.read}
-                />
                 <SidebarItem
                   icon={<DocsIcon />}
                   href={"https://docs.netbird.io/"}

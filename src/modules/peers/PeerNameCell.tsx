@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import { useLoggedInUser, useUsers } from "@/contexts/UsersProvider";
 import { Peer } from "@/interfaces/Peer";
 import ActiveInactiveRow from "@/modules/common-table-rows/ActiveInactiveRow";
-import { ExitNodePeerIndicator } from "@/modules/exit-node/ExitNodePeerIndicator";
 import { EphemeralPeerIndicator } from "@/modules/peer/EphemeralPeerIndicator";
 import { ExpirationDisabledIndicator } from "@/modules/peer/ExpirationDisabledIndicator";
 import { LoginRequiredIndicator } from "@/modules/peer/LoginRequiredIndicator";
@@ -49,7 +48,6 @@ export default function PeerNameCell({ peer, linkToPeer = true }: Props) {
           additionalInfo={
             isOwnerOrAdmin && (
               <>
-                <ExitNodePeerIndicator peer={peer} />
                 <EphemeralPeerIndicator peer={peer} />
                 <ExpirationDisabledIndicator peer={peer} />
                 <LoginRequiredIndicator peer={peer} />
