@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@components/Dialog";
+import HelpText from "@components/HelpText";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
 import {
@@ -23,16 +24,17 @@ import {
   SelectValue,
 } from "@components/Select";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
-import { useApiCall } from "@utils/api";
+import useFetchApi, { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
 import { BoxIcon, PenSquare, PlusCircle, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { buildResourceArn } from "@/utils/arn";
+import { DNSZone } from "@/interfaces/DNSZone";
 import {
   Resource,
   ResourceCreateRequest,
@@ -73,7 +75,17 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
   const [description, setDescription] = useState("");
   const [host, setHost] = useState("");
   const [port, setPort] = useState("");
+  const [dnsZoneId, setDnsZoneId] = useState("");
+  const [dnsLabel, setDnsLabel] = useState("");
   const resourceRequest = useApiCall<Resource>("/ui/resources");
+  const { data: zones } = useFetchApi<DNSZone[]>("/ui/dns/zones");
+  const activeZones = useMemo(() => zones?.filter((z) => z.isActive) ?? [], [zones]);
+
+  const labelPreview = useMemo(() => {
+    const source = dnsLabel.trim() || name;
+    return source.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }, [dnsLabel, name]);
+  const selectedZone = activeZones.find((z) => z.id === dnsZoneId);
 
   const handleCreate = () => {
     const body: ResourceCreateRequest = {
@@ -89,6 +101,8 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
         ...(host.trim() && { host: host.trim() }),
         ...(port.trim() && { port: Number(port) }),
       };
+      body.dnsZoneId = dnsZoneId || undefined;
+      body.dnsLabel = dnsLabel.trim() || undefined;
     }
 
     const promise = resourceRequest.post(body).then(() => {
@@ -111,6 +125,8 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
     setDescription("");
     setHost("");
     setPort("");
+    setDnsZoneId("");
+    setDnsLabel("");
     onOpenChange(false);
   };
 
@@ -202,6 +218,50 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
               />
             </div>
           </div>
+
+          {host.trim() && (
+            <div className={"grid grid-cols-2 gap-4"}>
+              <div>
+                <Label>DNS zone</Label>
+                <Select value={dnsZoneId || "__auto__"} onValueChange={(v) => setDnsZoneId(v === "__auto__" ? "" : v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={"__auto__"}>Auto-detect</SelectItem>
+                    {activeZones.map((z) => (
+                      <SelectItem key={z.id} value={z.id}>
+                        {z.domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>DNS label</Label>
+                <Input
+                  value={dnsLabel}
+                  onChange={(e) => setDnsLabel(e.target.value)}
+                  placeholder={"Default: resource name"}
+                />
+              </div>
+              <div className={"col-span-2"}>
+                <HelpText>
+                  Record preview:{" "}
+                  <span className={"font-mono"}>
+                    {labelPreview || "?"}.{selectedZone?.domain ?? "<auto-detected zone>"}
+                  </span>
+                  {!selectedZone && activeZones.length !== 1 && (
+                    <>
+                      {" "}— {activeZones.length === 0
+                        ? "no active zones, no record will be created"
+                        : "multiple active zones, pick one or none will be created"}
+                    </>
+                  )}
+                </HelpText>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -388,6 +448,19 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
       cell: ({ row }) => (
         <span className={"text-sm text-nb-gray-300"}>{row.original.region}</span>
       ),
+    },
+    {
+      accessorKey: "hostname",
+      header: ({ column }) => <DataTableHeader column={column}>Hostname</DataTableHeader>,
+      sortingFn: "text",
+      cell: ({ row }) =>
+        row.original.hostname ? (
+          <span className={"font-mono text-xs text-nb-gray-300"}>
+            {row.original.hostname.replace(/\.$/, "")}
+          </span>
+        ) : (
+          <span className={"text-sm text-nb-gray-500"}>—</span>
+        ),
     },
     {
       id: "arn",
