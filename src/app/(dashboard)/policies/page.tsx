@@ -31,9 +31,12 @@ export default function PoliciesPage() {
         <h1 ref={headingRef}>Policies</h1>
         <Paragraph>
           Raw Rego policies, one per name with a full revision history. Each
-          is a boolean hook in <code className={"font-mono text-xs"}>package tenant</code> — the
-          PDP evaluates it before the base policy and can only add grants, never
-          bypass the base safety guards.
+          is a boolean hook in{" "}
+          <code className={"font-mono text-xs whitespace-nowrap"}>
+            package tenant
+          </code>{" "}
+          — the PDP evaluates it before the base policy and can only add
+          grants, never bypass the base safety guards.
         </Paragraph>
       </div>
       <Suspense fallback={<SkeletonTable />}>

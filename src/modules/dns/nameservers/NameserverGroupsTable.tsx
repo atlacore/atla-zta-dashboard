@@ -97,11 +97,14 @@ function CreateNameserverGroupModal({ open, onOpenChange, onCreated }: CreateMod
           </div>
           <div>
             <Label>Nameservers</Label>
-            <HelpText>Comma-separated IP:port list, e.g. 1.1.1.1:53, 1.0.0.1:53</HelpText>
+            <HelpText>
+              Comma-separated hostnames, not IPs — this becomes the NS record
+              target and RFC 1035 requires a domain name there, e.g. ns1.example.com, ns2.example.com
+            </HelpText>
             <Input
               value={nameservers}
               onChange={(e) => setNameservers(e.target.value)}
-              placeholder={"1.1.1.1:53, 1.0.0.1:53"}
+              placeholder={"ns1.example.com, ns2.example.com"}
             />
           </div>
           <FancyToggleSwitch
@@ -174,6 +177,7 @@ function EditNameserverGroupModal({ group, open, onOpenChange, onSaved }: EditMo
           </div>
           <div>
             <Label>Nameservers</Label>
+            <HelpText>Comma-separated hostnames, not IPs — e.g. ns1.example.com, ns2.example.com</HelpText>
             <Input value={nameservers} onChange={(e) => setNameservers(e.target.value)} />
           </div>
           <FancyToggleSwitch value={isPrimary} onChange={setIsPrimary} label={"Primary"} />

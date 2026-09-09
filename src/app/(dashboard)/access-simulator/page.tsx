@@ -75,14 +75,18 @@ export default function AccessSimulatorPage() {
         </Breadcrumbs>
         <h1>Access Simulator</h1>
         <Paragraph>
-          Dry-run <code className={"font-mono text-xs"}>POST /access/evaluate</code> against
-          the live PDP — no session or credentials are issued. Posture is
-          omitted, so posture-conditional rules evaluate as not satisfied.
+          Dry-run{" "}
+          <code className={"font-mono text-xs whitespace-nowrap"}>
+            POST /access/evaluate
+          </code>{" "}
+          against the live PDP — no session or credentials are issued.
+          Posture is omitted, so posture-conditional rules evaluate as not
+          satisfied.
         </Paragraph>
       </div>
 
-      <div className={"px-8 pb-8 flex flex-wrap xl:flex-nowrap gap-10 max-w-6xl"}>
-        <Card className={"w-full xl:w-1/2 p-6 flex flex-col gap-4"}>
+      <div className={"px-8 pb-8 flex flex-wrap xl:flex-nowrap gap-10 max-w-[1800px]"}>
+        <Card className={"w-full xl:w-[420px] xl:shrink-0 p-6 flex flex-col gap-4"}>
           <div>
             <Label>Resource</Label>
             <HelpText>
@@ -152,15 +156,15 @@ export default function AccessSimulatorPage() {
           </Button>
         </Card>
 
-        <div className={"w-full xl:w-1/2"}>
+        <div className={"w-full xl:flex-1 xl:min-w-0"}>
           {!result && (
-            <Card className={"p-6 text-sm text-nb-gray-400"}>
+            <Card className={"w-full p-6 text-sm text-nb-gray-400"}>
               Fill in a resource (or ARN) and a subject, then Evaluate to see
               the PDP decision here.
             </Card>
           )}
           {result && (
-            <Card className={"p-6 flex flex-col gap-4"}>
+            <Card className={"w-full p-6 flex flex-col gap-4"}>
               <div className={"flex items-center gap-2"}>
                 {result.allow ? (
                   <CheckCircle2 size={20} className={"text-emerald-400"} />
