@@ -47,17 +47,19 @@ export interface PeerLocalFlags {
   server_ssh_allowed: boolean;
 }
 
-/** Atla-ZTA peer session — returned from GET /ui/peers */
+/** Atla-ZTA peer session — returned from GET /ui/peers. Matches schemas.PeerSession. */
 export interface PeerSession {
   id: string;
   tenantId: string;
   userId: string;
-  resourceId?: string;
+  edgeNodeIds: string[];
   region: string;
   allocatedIp: string;
-  wgPubkey: string;
+  allowedIps: string[];
+  wgPublicKey: string;
   clientIp: string;
   deviceId?: string;
+  transport: "wireguard" | "reality";
   status: "active" | "revoked" | "expired";
   createdAt: string;
   expiresAt: string;

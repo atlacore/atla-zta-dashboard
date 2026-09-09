@@ -1,16 +1,14 @@
 "use client";
 
 import Breadcrumbs from "@components/Breadcrumbs";
-import InlineLink from "@components/InlineLink";
 import Paragraph from "@components/Paragraph";
 import SkeletonTable from "@components/skeletons/SkeletonTable";
 import { RestrictedAccess } from "@components/ui/RestrictedAccess";
 import { usePortalElement } from "@hooks/usePortalElement";
 import useFetchApi from "@utils/api";
-import { ExternalLinkIcon, User2 } from "lucide-react";
+import { User2 } from "lucide-react";
 import React, { lazy, Suspense } from "react";
 import TeamIcon from "@/assets/icons/TeamIcon";
-import { useGroups } from "@/contexts/GroupsProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { User } from "@/interfaces/User";
 import PageContainer from "@/layouts/PageContainer";
@@ -18,7 +16,6 @@ import PageContainer from "@/layouts/PageContainer";
 const UsersTable = lazy(() => import("@/modules/users/UsersTable"));
 
 export default function TeamUsers() {
-  const { isLoading: isGroupsLoading } = useGroups();
   const { permission } = usePermissions();
   const { data: users, isLoading } = useFetchApi<User[]>(
     "/ui/users",
@@ -45,26 +42,14 @@ export default function TeamUsers() {
         </Breadcrumbs>
         <h1 ref={headingRef}>Users</h1>
         <Paragraph>
-          Manage users and their permissions. Same-domain email users are added
-          automatically on first sign-in.
-        </Paragraph>
-        <Paragraph>
-          Learn more about
-          <InlineLink
-            href={"https://docs.netbird.io/how-to/add-users-to-your-network"}
-            target={"_blank"}
-          >
-            Users
-            <ExternalLinkIcon size={12} />
-          </InlineLink>
-          in our documentation.
+          Manage users and their roles for this tenant.
         </Paragraph>
       </div>
       <RestrictedAccess page={"Users"} hasAccess={permission.users.read}>
         <Suspense fallback={<SkeletonTable />}>
           <UsersTable
             users={users}
-            isLoading={isLoading || isGroupsLoading}
+            isLoading={isLoading}
             headingTarget={portalTarget}
           />
         </Suspense>

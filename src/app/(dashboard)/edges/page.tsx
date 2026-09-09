@@ -29,7 +29,7 @@ interface EdgeNode {
   edge_id: string;
   region: string;
   host: string;
-  pubkey: string;
+  public_key: string;
   wg_port: number;
   cpu_usage: number;
   mem_usage: number;

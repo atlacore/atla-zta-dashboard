@@ -8,7 +8,7 @@ import { useApiCall } from "@utils/api";
 import { removeAllSpaces } from "@utils/helpers";
 import dayjs from "dayjs";
 import { ShieldX, Wifi } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import Button from "@components/Button";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -60,6 +60,7 @@ export default function PeersTable({
   const { refresh } = usePeers();
   const { users } = useUsers();
   const path = usePathname();
+  const router = useRouter();
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
@@ -176,6 +177,10 @@ export default function PeersTable({
       searchPlaceholder={"Search by IP or region..."}
       columnVisibility={{ search: false }}
       isLoading={isLoading}
+      onRowClick={(row, cell) => {
+        if (cell === "actions") return;
+        router.push("/peer?id=" + row.original.id);
+      }}
     >
       {(table) => (
         <>
