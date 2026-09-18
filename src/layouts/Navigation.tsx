@@ -92,6 +92,23 @@ export default function Navigation({
                 />
 
                 <SidebarItem
+                  icon={<ControlCenterIcon size={16} />}
+                  label={
+                    <div className={"flex items-center gap-2"}>
+                      Topology
+                      <SmallBadge
+                        text={"Preview"}
+                        variant={"sky"}
+                        className={"text-[8px] leading-none py-[3px] px-[5px]"}
+                        textClassName={"top-0"}
+                      />
+                    </div>
+                  }
+                  href={"/control-center-v2"}
+                  visible={permission.policies.read}
+                />
+
+                <SidebarItem
                   icon={<PeerIcon />}
                   label="Peers"
                   href={"/peers"}
