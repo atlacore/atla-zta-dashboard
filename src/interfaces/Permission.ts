@@ -2,6 +2,7 @@ export interface Permissions {
   is_restricted: boolean;
   modules: {
     peers: Permission;
+    devices: Permission;
     groups: Permission;
 
     setup_keys: Permission;

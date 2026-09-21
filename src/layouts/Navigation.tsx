@@ -18,7 +18,7 @@ import { headerHeight } from "@/layouts/Header";
 import { NetworkNavigation } from "@/modules/networks/misc/NetworkNavigation";
 import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { SmallBadge } from "@components/ui/SmallBadge";
-import { BoxIcon, NetworkIcon, ServerIcon } from "lucide-react";
+import { BoxIcon, Laptop, NetworkIcon, ServerIcon } from "lucide-react";
 import * as React from "react";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
 
@@ -113,6 +113,13 @@ export default function Navigation({
                   label="Peers"
                   href={"/peers"}
                   visible={!isRestricted}
+                />
+
+                <SidebarItem
+                  icon={<Laptop size={16} />}
+                  label="Devices"
+                  href={"/devices"}
+                  visible={permission.devices.read}
                 />
 
                 <SidebarItem

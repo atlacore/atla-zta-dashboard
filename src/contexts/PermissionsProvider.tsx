@@ -23,6 +23,7 @@ function buildPermissions(role: string | undefined): { isRestricted: boolean; pe
     isRestricted: !isAdmin,
     permission: {
       peers: rw,
+      devices: rw,
       groups: rw,
       setup_keys: rw,
       policies: rw,

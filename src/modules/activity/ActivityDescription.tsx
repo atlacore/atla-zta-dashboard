@@ -898,6 +898,43 @@ export default function ActivityDescription({ event }: Props) {
       </div>
     );
 
+  if (event.activity_code == "session.created")
+    return (
+      <div className={"inline"}>
+        Session <Value>{event.target_id}</Value> was created over{" "}
+        <Value>{m.transport}</Value>
+        {m.allocated_ip && (
+          <>
+            {" "}
+            with address <Value>{m.allocated_ip}</Value>
+          </>
+        )}
+      </div>
+    );
+
+  if (event.activity_code == "session.extended")
+    return (
+      <div className={"inline"}>
+        Session <Value>{event.target_id}</Value> was extended with{" "}
+        <Value>
+          {Array.isArray(m.cidrs_added) ? m.cidrs_added.join(", ") : m.cidrs_added}
+        </Value>
+      </div>
+    );
+
+  if (event.activity_code == "session.revoke.attempted")
+    return (
+      <div className={"inline"}>
+        Revocation requested for session <Value>{event.target_id}</Value>
+        {m.trigger && (
+          <>
+            {" "}
+            — trigger <Value>{m.trigger}</Value>
+          </>
+        )}
+      </div>
+    );
+
   /**
    * ZTA — Tenant events
    */
@@ -938,6 +975,17 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         SDK Key <Value>{m.name || event.target_id}</Value> was revoked
+      </div>
+    );
+
+  /**
+   * ZTA — Device events
+   */
+
+  if (event.activity_code == "device.deleted")
+    return (
+      <div className={"inline"}>
+        Device <Value>{event.target_id}</Value> enrollment was revoked
       </div>
     );
 
