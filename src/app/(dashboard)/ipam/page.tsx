@@ -21,7 +21,13 @@ import PageContainer from "@/layouts/PageContainer";
 // ── Types ─────────────────────────────────────────────────────────────────────
 // Matches schemas.IpamAddress JSON output with preloaded Pool and Resource.
 
-type IpamStatus = "pending" | "active" | "released" | "error";
+type IpamStatus =
+  | "pending"
+  | "active"
+  | "released"
+  | "error"
+  | "revoking"
+  | "quarantined";
 
 interface IpamPool {
   id: number;
@@ -52,10 +58,12 @@ interface IpamAddress {
 // ── Status badge ──────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<IpamStatus, string> = {
-  active:   "bg-green-500/10 text-green-400 border-green-500/20",
-  pending:  "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
-  released: "bg-nb-gray-900/60 text-nb-gray-500 border-nb-gray-800",
-  error:    "bg-red-500/10 text-red-400 border-red-500/20",
+  active:      "bg-green-500/10 text-green-400 border-green-500/20",
+  pending:     "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+  released:    "bg-nb-gray-900/60 text-nb-gray-500 border-nb-gray-800",
+  error:       "bg-red-500/10 text-red-400 border-red-500/20",
+  revoking:    "bg-orange-500/10 text-orange-400 border-orange-500/20",
+  quarantined: "bg-purple-500/10 text-purple-400 border-purple-500/20",
 };
 
 function StatusBadge({ status }: { status: IpamStatus }) {
