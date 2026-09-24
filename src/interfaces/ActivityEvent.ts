@@ -76,6 +76,29 @@ const ACTIVITY_DISPLAY_NAMES: Record<string, string> = {
 
   // Posture
   "posture_check.created": "Posture Check Created",
+
+  // SEI (Signed Edge Instructions)
+  "sei.applied": "Edge Instruction Applied",
+  "sei.duplicate": "Edge Instruction Duplicate",
+  "sei.rejected.signature": "Edge Instruction Rejected (Bad Signature)",
+  "sei.rejected.edge_mismatch": "Edge Instruction Rejected (Edge Mismatch)",
+  "sei.rejected.scope": "Edge Instruction Rejected (Scope Violation)",
+  "sei.rejected.epoch": "Edge Instruction Rejected (Stale Epoch)",
+  "sei.rejected.replay": "Edge Instruction Rejected (Replay)",
+  "sei.rejected.operation": "Edge Instruction Rejected (Unknown Operation)",
+  "sei.rejected.expired": "Edge Instruction Rejected (Expired)",
+  "sei.reconciliation_required": "Edge Instruction Failed (Reconciliation Required)",
+
+  // IPAM
+  "ip.quarantined": "IP Quarantined",
+  "ipam.stale_allocation": "Stale IP Allocation Detected",
+
+  // Network reconciliation
+  "wg.peer_mismatch": "WireGuard Peer Mismatch",
+  "wg.allowedip_mismatch": "WireGuard AllowedIPs Mismatch",
+  "network.reconciliation.completed": "Network Reconciliation Completed",
+  "network.reconciliation.failed": "Network Reconciliation Failed",
+  "network.reconciliation.removals_suppressed": "Network Reconciliation Removals Suppressed",
 };
 
 function humanizeActivityCode(code: string): string {
