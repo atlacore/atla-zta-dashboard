@@ -4,8 +4,9 @@ import loadConfig from "@utils/config";
 import { cn } from "@utils/helpers";
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { Suspense, useId, useState } from "react";
+import React, { Suspense, useEffect, useId, useState } from "react";
 import { auth } from "@/utils/auth";
+import { PublicIdentityProvider } from "@/interfaces/IdentityProvider";
 
 const config = loadConfig();
 
@@ -16,6 +17,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
+  const tenant = searchParams.get("tenant") || "";
 
   const emailId = useId();
   const passwordId = useId();
@@ -26,6 +28,15 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [providers, setProviders] = useState<PublicIdentityProvider[]>([]);
+
+  useEffect(() => {
+    const qs = tenant ? `?tenant=${encodeURIComponent(tenant)}` : "";
+    fetch(`${(config as any).apiOrigin}/api/auth/oidc/providers${qs}`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setProviders)
+      .catch(() => setProviders([]));
+  }, [tenant]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -270,6 +281,34 @@ function LoginForm() {
                 )}
               </button>
             </form>
+
+            {providers.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-nb-gray-900" />
+                  <span className="text-[11px] uppercase tracking-wide text-nb-gray-600">
+                    or continue with
+                  </span>
+                  <div className="h-px flex-1 bg-nb-gray-900" />
+                </div>
+                <div className="mt-4 flex flex-col gap-2">
+                  {providers.map((p) => (
+                    <a
+                      key={p.id}
+                      href={p.loginUrl}
+                      className={cn(
+                        "flex h-10 w-full items-center justify-center gap-2 rounded-lg border",
+                        "border-nb-gray-900 bg-nb-gray-940 text-sm font-medium text-nb-gray-200",
+                        "transition-colors duration-150 hover:border-nb-gray-800 hover:bg-nb-gray-930",
+                      )}
+                    >
+                      <ShieldCheck size={14} aria-hidden="true" />
+                      Sign in with {p.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
