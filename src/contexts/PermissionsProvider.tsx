@@ -38,7 +38,7 @@ function buildPermissions(role: string | undefined): { isRestricted: boolean; pe
       settings: isAdmin ? full : none,
       accounts: isAdmin ? full : none,
       billing: none,
-      identity_providers: none,
+      identity_providers: isAdmin ? full : none,
       edr: rw,
       event_streaming: rw,
       idp: none,

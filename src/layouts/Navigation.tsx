@@ -179,6 +179,12 @@ export default function Navigation({
                     href={"/tenants"}
                     visible={permission.policies.read}
                   />
+                  <SidebarItem
+                    label="Identity Providers"
+                    isChild
+                    href={"/identity-providers"}
+                    visible={permission.identity_providers.read}
+                  />
                 </SidebarItem>
 
                 <NetworkNavigation />
