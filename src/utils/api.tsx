@@ -56,7 +56,7 @@ async function apiRequest<T>(
     let error: ErrorResponse;
     try {
       const body = await res.json();
-      error = { code: res.status, message: body.message || body.error || res.statusText };
+      error = { code: res.status, message: body.message || body.error || body.validationError || res.statusText };
     } catch {
       error = { code: res.status, message: res.statusText };
     }

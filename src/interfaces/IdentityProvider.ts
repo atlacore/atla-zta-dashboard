@@ -1,39 +1,6 @@
-export interface GoogleWorkspaceIntegration {
-  id: string;
-  customer_id: string;
-  sync_interval: number;
-  enabled: boolean;
-  group_prefixes: string[];
-  user_group_prefixes: string[];
-  connector_id?: string;
-}
-
-export interface AzureADIntegration {
-  id: string;
-  client_id: string;
-  tenant_id: string;
-  sync_interval: number;
-  enabled: boolean;
-  group_prefixes: string[];
-  user_group_prefixes: string[];
-  connector_id?: string;
-}
-
-export interface OktaIntegration {
-  id: string;
-  enabled: boolean;
-  group_prefixes: string[];
-  user_group_prefixes: string[];
-  auth_token: string;
-  connection_name?: string;
-  connector_id?: string;
-}
-
-export interface IdentityProviderLog {
-  id: number;
-  level: string;
-  timestamp: Date;
-}
+// Matches schemas.IdentityProviderResponse / CreateRequest / UpdateRequest.
+// The backend only ever stores type: "oidc" — SSOIdentityProviderType below is
+// a display-only guess (from the issuer hostname) for which icon to show.
 
 export type SSOIdentityProviderType =
   | "oidc"
@@ -46,43 +13,69 @@ export type SSOIdentityProviderType =
   | "authentik"
   | "keycloak";
 
-export const SSOIdentityProviderOptions: {
-  value: SSOIdentityProviderType;
-  label: string;
-}[] = [
-  { value: "oidc", label: "OIDC (Generic)" },
-  { value: "google", label: "Google" },
-  { value: "microsoft", label: "Microsoft" },
-  { value: "entra", label: "Microsoft Entra" },
-  { value: "okta", label: "Okta" },
-  { value: "zitadel", label: "Zitadel" },
-  { value: "pocketid", label: "PocketID" },
-  { value: "authentik", label: "Authentik" },
-  { value: "keycloak", label: "Keycloak" },
-];
-
-export const getSSOIdentityProviderLabelByType = (
-  type: SSOIdentityProviderType,
-) => {
-  return (
-    SSOIdentityProviderOptions.find((option) => option.value === type)?.label ??
-    type
-  );
+// guessSSOIdentityProviderType infers a display icon from the issuer's host -
+// purely cosmetic, never sent to or read from the backend.
+export const guessSSOIdentityProviderType = (
+  issuer: string,
+): SSOIdentityProviderType => {
+  const host = issuer.toLowerCase();
+  if (host.includes("okta.com")) return "okta";
+  if (host.includes("accounts.google.com")) return "google";
+  if (host.includes("login.microsoftonline.com") || host.includes("sts.windows.net")) return "entra";
+  if (host.includes("zitadel")) return "zitadel";
+  if (host.includes("pocketid")) return "pocketid";
+  if (host.includes("authentik")) return "authentik";
+  if (host.includes("keycloak")) return "keycloak";
+  return "oidc";
 };
 
-export interface SSOIdentityProvider {
+export interface IdentityProvider {
   id: string;
-  type: SSOIdentityProviderType;
+  tenantId: string;
+  type: "oidc";
   name: string;
   issuer: string;
-  client_id: string;
-  redirect_url?: string;
+  clientId: string;
+  redirectUri: string;
+  scope: string;
+  groupsClaim: string;
+  authorizationEndpoint?: string;
+  tokenEndpoint?: string;
+  userinfoEndpoint?: string;
+  jwksUri?: string;
+  discoveryFetchedAt?: string;
+  discoveryExpiresAt?: string;
+  autoProvision: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  // loginUrl skips straight into the OIDC flow; dashboardLoginUrl lands on
+  // /login pre-filtered to this tenant - share that one with your users.
+  loginUrl: string;
+  dashboardLoginUrl: string;
 }
 
-export interface SSOIdentityProviderRequest {
-  type: SSOIdentityProviderType;
+export interface IdentityProviderCreateRequest {
   name: string;
   issuer: string;
-  client_id: string;
-  client_secret: string;
+  clientId: string;
+  clientSecret: string;
+  scope?: string;
+  groupsClaim?: string;
+  autoProvision?: boolean;
+}
+
+export interface IdentityProviderUpdateRequest {
+  name?: string;
+  clientSecret?: string;
+  autoProvision?: boolean;
+  isActive?: boolean;
+}
+
+// PublicIdentityProvider matches schemas.PublicIdentityProvider - the
+// pre-auth, cross-tenant listing shown as "Sign in with X" on /login
+export interface PublicIdentityProvider {
+  id: string;
+  name: string;
+  loginUrl: string;
 }
