@@ -3,6 +3,7 @@ export interface Permissions {
   modules: {
     peers: Permission;
     devices: Permission;
+    edges: Permission;
     groups: Permission;
 
     setup_keys: Permission;

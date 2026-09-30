@@ -1,6 +1,8 @@
 "use client";
 
 import Breadcrumbs from "@components/Breadcrumbs";
+import Button from "@components/Button";
+import { notify } from "@components/Notification";
 import Paragraph from "@components/Paragraph";
 import SkeletonTable from "@components/skeletons/SkeletonTable";
 import { DataTable } from "@components/table/DataTable";
@@ -8,14 +10,16 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { usePortalElement } from "@hooks/usePortalElement";
-import useFetchApi from "@utils/api";
+import useFetchApi, { useApiCall } from "@utils/api";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { cn } from "@utils/helpers";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { ActivityIcon, ServerIcon } from "lucide-react";
+import { ActivityIcon, ServerIcon, ShieldX } from "lucide-react";
 import React, { Suspense } from "react";
 import { useSWRConfig } from "swr";
+import { useDialog } from "@/contexts/DialogProvider";
+import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import PageContainer from "@/layouts/PageContainer";
 
@@ -76,6 +80,48 @@ function EdgeStatusDot({ lastSeen }: { lastSeen: string }) {
         isOnline ? "bg-green-400 shadow-[0_0_6px_1px] shadow-green-500/50" : "bg-nb-gray-700",
       )}
     />
+  );
+}
+
+// ── Revoke ────────────────────────────────────────────────────────────────────
+
+function RevokeButton({
+  edge,
+  onRevoked,
+}: {
+  edge: EdgeNode;
+  onRevoked: () => void;
+}) {
+  const { permission } = usePermissions();
+  const { confirm } = useDialog();
+  const edgeRequest = useApiCall<{ status: string }>("/ui/edges");
+
+  const revoke = async () => {
+    const choice = await confirm({
+      title: `Revoke edge '${edge.edge_id || edge.id}'?`,
+      description:
+        "This immediately deletes the edge's AppRole, revokes its PKI certificate, and disconnects every session currently pinned to it. This cannot be undone.",
+      confirmText: "Revoke",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!choice) return;
+
+    const promise = edgeRequest.del(undefined, `/${edge.id}`).then(() => onRevoked());
+    notify({
+      title: "Revoke Edge",
+      description: `Edge '${edge.edge_id || edge.id}' revoked.`,
+      promise,
+      loadingMessage: "Revoking edge...",
+    });
+  };
+
+  if (!permission.edges?.delete) return null;
+
+  return (
+    <Button variant={"danger-outline"} className={"!px-3"} onClick={revoke}>
+      <ShieldX size={14} />
+    </Button>
   );
 }
 
@@ -173,6 +219,15 @@ function EdgeNodesTable({
         >
           {dayjs(row.original.last_seen).fromNow()}
         </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <div className="flex justify-end pr-4">
+          <RevokeButton edge={row.original} onRevoked={() => mutate("/ui/edges")} />
+        </div>
       ),
     },
   ];

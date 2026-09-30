@@ -24,6 +24,7 @@ function buildPermissions(role: string | undefined): { isRestricted: boolean; pe
     permission: {
       peers: rw,
       devices: rw,
+      edges: rw,
       groups: rw,
       setup_keys: rw,
       policies: rw,
