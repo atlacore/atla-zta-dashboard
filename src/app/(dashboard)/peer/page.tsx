@@ -9,13 +9,13 @@ import { notify } from "@components/Notification";
 import Paragraph from "@components/Paragraph";
 import FullScreenLoading from "@components/ui/FullScreenLoading";
 import { PageNotFound } from "@components/ui/PageNotFound";
-import { RestrictedAccess } from "@components/ui/RestrictedAccess";
 import { SmallBadge } from "@components/ui/SmallBadge";
 import useRedirect from "@hooks/useRedirect";
 import useFetchApi, { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
 import {
   CalendarDays,
+  Ghost,
   Globe,
   MapPin,
   NetworkIcon,
@@ -26,6 +26,7 @@ import {
 import { useSearchParams } from "next/navigation";
 import React, { useMemo } from "react";
 import PeerIcon from "@/assets/icons/PeerIcon";
+import WireGuardIcon from "@/assets/icons/WireGuardIcon";
 import PeersProvider, { usePeers } from "@/contexts/PeersProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useUsers } from "@/contexts/UsersProvider";
@@ -47,20 +48,30 @@ const statusVariant = {
   expired: "yellow",
 } as const;
 
-export default function PeerPage() {
-  const queryParameter = useSearchParams();
-  const { isRestricted } = usePermissions();
-  const sessionId = queryParameter.get("id");
-
-  useRedirect("/peers", false, !sessionId || isRestricted);
-
-  if (isRestricted) {
+// TransportValue shows the human-readable name + icon for a session's
+// carrier - "reality" is the REALITY/Xray TLS-camouflage transport
+function TransportValue({ transport }: Readonly<{ transport: PeerSession["transport"] }>) {
+  if (transport === "reality") {
     return (
-      <PageContainer>
-        <RestrictedAccess page={"Session Information"} />
-      </PageContainer>
+      <span className={"flex items-center gap-2 text-nb-gray-400"}>
+        <Ghost size={14} className={"shrink-0"} />
+        Xray (REALITY)
+      </span>
     );
   }
+  return (
+    <span className={"flex items-center gap-2 text-nb-gray-400"}>
+      <WireGuardIcon size={14} className={"shrink-0"} />
+      WireGuard
+    </span>
+  );
+}
+
+export default function PeerPage() {
+  const queryParameter = useSearchParams();
+  const sessionId = queryParameter.get("id");
+
+  useRedirect("/peers", false, !sessionId);
 
   return (
     <PeersProvider>
@@ -237,7 +248,8 @@ function SessionInformationCard({
               Transport
             </>
           }
-          value={session.transport}
+          value={<TransportValue transport={session.transport} />}
+          tooltip={false}
         />
         {session.deviceId && (
           <Card.ListItem
