@@ -8,7 +8,7 @@ import PocketIdIcon from "@/assets/icons/PocketIdIcon";
 import ZitadelIcon from "@/assets/icons/ZitadelIcon";
 import AuthentikIcon from "@/assets/icons/AuthentikIcon";
 import KeycloakIcon from "@/assets/icons/KeycloakIcon";
-import { KeyRound } from "lucide-react";
+import { Building2, KeyRound } from "lucide-react";
 
 export const idpIcon = (
   type: SSOIdentityProviderType,
@@ -24,6 +24,7 @@ export const idpIcon = (
     authentik: <AuthentikIcon size={size} />,
     keycloak: <KeycloakIcon size={size} />,
     oidc: <KeyRound size={size} className="text-nb-gray-400" />,
+    ldap: <Building2 size={size} className="text-nb-gray-400" />,
   };
 
   return icons[type];

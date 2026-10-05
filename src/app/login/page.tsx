@@ -2,13 +2,98 @@
 
 import loadConfig from "@utils/config";
 import { cn } from "@utils/helpers";
-import { Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
+import { Building2, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useId, useState } from "react";
 import { auth } from "@/utils/auth";
 import { PublicIdentityProvider } from "@/interfaces/IdentityProvider";
 
 const config = loadConfig();
+
+const sharedInputClass =
+  "w-full h-10 rounded-lg border bg-nb-gray-940 text-sm text-nb-gray-100 " +
+  "placeholder:text-nb-gray-600 border-nb-gray-900 hover:border-nb-gray-800 " +
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 " +
+  "focus-visible:border-netbird/40 focus-visible:ring-netbird/20";
+
+// LdapLoginForm authenticates directly against one AD/LDAP connection — a
+// plain username/password POST, no redirect to follow.
+function LdapLoginForm({
+  provider,
+  redirect,
+}: {
+  provider: PublicIdentityProvider;
+  redirect: string;
+}) {
+  const router = useRouter();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(provider.loginUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || body.error || "Invalid credentials");
+      }
+      const { token } = await res.json();
+      auth.setToken(token);
+      router.replace(redirect);
+    } catch (err: any) {
+      setError(err.message ?? "Login failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2 rounded-lg border border-nb-gray-900 bg-nb-gray-940 p-3">
+      <div className="flex items-center gap-2 text-[13px] font-medium text-nb-gray-200">
+        <Building2 size={14} aria-hidden="true" />
+        {provider.name}
+      </div>
+      <input
+        type="text"
+        required
+        autoComplete="username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="AD username"
+        className={cn(sharedInputClass, "px-3")}
+      />
+      <input
+        type="password"
+        required
+        autoComplete="current-password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Password"
+        className={cn(sharedInputClass, "px-3")}
+      />
+      {error && <p className="text-xs text-red-400">{error}</p>}
+      <button
+        type="submit"
+        disabled={loading || !username || !password}
+        className={cn(
+          "h-9 w-full rounded-lg bg-nb-gray-900 text-sm font-medium text-nb-gray-100",
+          "transition-colors duration-150 hover:bg-nb-gray-800",
+          "disabled:cursor-not-allowed disabled:opacity-40",
+        )}
+      >
+        {loading ? "Signing in…" : `Sign in with ${provider.name}`}
+      </button>
+    </form>
+  );
+}
 
 // ─── LoginForm ────────────────────────────────────────────────────────────────
 // Isolated in its own component so useSearchParams() can be wrapped in Suspense.
@@ -29,6 +114,8 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [providers, setProviders] = useState<PublicIdentityProvider[]>([]);
+  const oidcProviders = providers.filter((p) => p.type !== "ldap");
+  const ldapProviders = providers.filter((p) => p.type === "ldap");
 
   useEffect(() => {
     const qs = tenant ? `?tenant=${encodeURIComponent(tenant)}` : "";
@@ -282,7 +369,7 @@ function LoginForm() {
               </button>
             </form>
 
-            {providers.length > 0 && (
+            {oidcProviders.length > 0 && (
               <div className="mt-6">
                 <div className="flex items-center gap-3">
                   <div className="h-px flex-1 bg-nb-gray-900" />
@@ -292,7 +379,7 @@ function LoginForm() {
                   <div className="h-px flex-1 bg-nb-gray-900" />
                 </div>
                 <div className="mt-4 flex flex-col gap-2">
-                  {providers.map((p) => (
+                  {oidcProviders.map((p) => (
                     <a
                       key={p.id}
                       href={p.loginUrl}
@@ -305,6 +392,23 @@ function LoginForm() {
                       <ShieldCheck size={14} aria-hidden="true" />
                       Sign in with {p.name}
                     </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {ldapProviders.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-nb-gray-900" />
+                  <span className="text-[11px] uppercase tracking-wide text-nb-gray-600">
+                    or sign in with your directory
+                  </span>
+                  <div className="h-px flex-1 bg-nb-gray-900" />
+                </div>
+                <div className="mt-4 flex flex-col gap-3">
+                  {ldapProviders.map((p) => (
+                    <LdapLoginForm key={p.id} provider={p} redirect={redirect} />
                   ))}
                 </div>
               </div>
