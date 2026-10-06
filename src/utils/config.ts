@@ -3,6 +3,7 @@ interface Config {
   hotjarTrackID?: number;
   googleAnalyticsID?: string;
   googleTagManagerID?: string;
+  sentryDsn?: string;
 }
 
 const loadConfig = (): Config => {
@@ -23,6 +24,7 @@ const loadConfig = (): Config => {
     hotjarTrackID: configJson?.hotjarTrackID || undefined,
     googleAnalyticsID: configJson?.googleAnalyticsID || undefined,
     googleTagManagerID: configJson?.googleTagManagerID || undefined,
+    sentryDsn: configJson?.sentryDsn || undefined,
   };
 };
 
