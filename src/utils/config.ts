@@ -17,7 +17,9 @@ const loadConfig = (): Config => {
   }
 
   return {
-    apiOrigin: configJson.apiOrigin || "http://localhost:9090",
+    // "" is a deliberate value (same-origin, e.g. behind a reverse proxy) -
+    // only fall back to the dev default when the field is missing entirely.
+    apiOrigin: configJson.apiOrigin ?? "http://localhost:9090",
     hotjarTrackID: configJson?.hotjarTrackID || undefined,
     googleAnalyticsID: configJson?.googleAnalyticsID || undefined,
     googleTagManagerID: configJson?.googleTagManagerID || undefined,

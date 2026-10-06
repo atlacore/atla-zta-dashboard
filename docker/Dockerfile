@@ -1,4 +1,12 @@
-FROM alpine:3.14
+FROM node:22-alpine AS builder
+
+WORKDIR /src
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+COPY . .
+RUN yarn build
+
+FROM alpine:3.21
 
 RUN apk add --no-cache bash curl less ca-certificates git tzdata zip gettext \
     nginx curl supervisor certbot-nginx && \
@@ -21,4 +29,4 @@ RUN chmod +x /usr/local/init_react_envs.sh
 # configure supervisor
 COPY docker/supervisord.conf /etc/supervisord.conf
 # copy build files
-COPY out/ /usr/share/nginx/html/
+COPY --from=builder /src/out/ /usr/share/nginx/html/
