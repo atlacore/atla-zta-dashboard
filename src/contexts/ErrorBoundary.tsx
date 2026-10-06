@@ -3,6 +3,7 @@ import { useDebounce } from "@hooks/useDebounce";
 import { IconCircleX } from "@tabler/icons-react";
 import { ErrorResponse } from "@utils/api";
 import React, { useEffect, useState } from "react";
+import { reportError } from "@/contexts/SentryProvider";
 
 type Props = {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export default function ErrorBoundaryProvider({ children }: Props) {
 
   useEffect(() => {
     if (errorDebounced) {
+      reportError(errorDebounced);
       const firstCharUpper = errorDebounced.message.charAt(0).toUpperCase();
       const message = firstCharUpper + errorDebounced.message.slice(1);
       notify({

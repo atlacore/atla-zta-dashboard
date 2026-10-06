@@ -19,6 +19,7 @@ import DialogProvider from "@/contexts/DialogProvider";
 import ErrorBoundaryProvider from "@/contexts/ErrorBoundary";
 import { GlobalThemeProvider } from "@/contexts/GlobalThemeProvider";
 import { NavigationEvents } from "@/contexts/NavigationEvents";
+import SentryProvider from "@/contexts/SentryProvider";
 
 const inter = localFont({
   src: "../assets/fonts/Inter.ttf",
@@ -43,30 +44,32 @@ export default function AppLayout({
       </head>
       <body className={cn(inter.className)}>
         <Suspense fallback={<FullScreenLoading />}>
-          <AnalyticsProvider>
-            <DialogProvider>
-              <GlobalThemeProvider>
-                <ErrorBoundaryProvider>
-                  <AtlaAuthProvider>
-                    <TooltipProvider delayDuration={0}>
-                      {children}
-                    </TooltipProvider>
-                  </AtlaAuthProvider>
-                </ErrorBoundaryProvider>
-              </GlobalThemeProvider>
-            </DialogProvider>
-            <Toaster
-              position="top-center"
-              duration={3000}
-              toastOptions={{ unstyled: true }}
-              style={{ "--width": "28rem" } as React.CSSProperties}
-              gap={0}
-              visibleToasts={5}
-              offset="12px"
-            />
-            <NavigationEvents />
-            <DisableDarkReader />
-          </AnalyticsProvider>
+          <SentryProvider>
+            <AnalyticsProvider>
+              <DialogProvider>
+                <GlobalThemeProvider>
+                  <ErrorBoundaryProvider>
+                    <AtlaAuthProvider>
+                      <TooltipProvider delayDuration={0}>
+                        {children}
+                      </TooltipProvider>
+                    </AtlaAuthProvider>
+                  </ErrorBoundaryProvider>
+                </GlobalThemeProvider>
+              </DialogProvider>
+              <Toaster
+                position="top-center"
+                duration={3000}
+                toastOptions={{ unstyled: true }}
+                style={{ "--width": "28rem" } as React.CSSProperties}
+                gap={0}
+                visibleToasts={5}
+                offset="12px"
+              />
+              <NavigationEvents />
+              <DisableDarkReader />
+            </AnalyticsProvider>
+          </SentryProvider>
         </Suspense>
       </body>
     </html>
