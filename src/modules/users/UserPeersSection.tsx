@@ -60,7 +60,7 @@ export const UserPeersSection = ({ user }: Props) => {
                 className={"py-4"}
                 title={"This user has no registered peers"}
                 description={
-                  "Install NetBird and sign in as this user to register peers."
+                  "Install the ATLA client and sign in as this user to register peers."
                 }
                 icon={<PeerIcon size={20} className={"fill-nb-gray-300"} />}
               />

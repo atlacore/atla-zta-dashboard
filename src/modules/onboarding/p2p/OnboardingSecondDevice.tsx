@@ -11,7 +11,7 @@ import { useEffect, useState } from "react";
 import { useDialog } from "@/contexts/DialogProvider";
 import { Peer } from "@/interfaces/Peer";
 import { SetupKey } from "@/interfaces/SetupKey";
-import { SetupModalContent } from "@/modules/setup-netbird-modal/SetupModal";
+import { SetupModalContent } from "@/modules/setup-client-modal/SetupModal";
 
 type Props = {
   secondDevice?: Peer;
@@ -36,8 +36,8 @@ export const OnboardingSecondDevice = ({ secondDevice, onFinish }: Props) => {
   const openNavigatorShare = () => {
     if (navigator.share) {
       navigator.share({
-        title: "Install NetBird",
-        text: "Install NetBird on another device using this link.",
+        title: "Install ATLA client",
+        text: "Install the ATLA client on another device using this link.",
         url: getInstallUrl(),
       });
     }
@@ -47,7 +47,7 @@ export const OnboardingSecondDevice = ({ secondDevice, onFinish }: Props) => {
     const choice = await confirm({
       title: `Create a Setup Key?`,
       description:
-        "If you continue, a one-off setup key will be automatically created and you will be able to install NetBird.",
+        "If you continue, a one-off setup key will be automatically created and you will be able to install the ATLA client.",
       confirmText: "Continue",
       cancelText: "Cancel",
       type: "default",
@@ -78,7 +78,7 @@ export const OnboardingSecondDevice = ({ secondDevice, onFinish }: Props) => {
           {`Time to bring in your second device`}
         </h1>
         <div className="text-sm text-nb-gray-300 font-light mt-2 block text-center">
-            Each device (a.k.a. peer) in your NetBird network gets its own private IP and name to communicate securely in the network.
+            Each device (a.k.a. peer) in your ATLA ZTA network gets its own private IP and name to communicate securely in the network.
         </div>
         <div className="text-sm text-nb-gray-300 font-light mt-2 block text-center">
             To complete the setup, just share this link or email it to yourself to set up your next device
@@ -121,10 +121,7 @@ export const OnboardingSecondDevice = ({ secondDevice, onFinish }: Props) => {
       {setupKey && (
         <Modal open={open} onOpenChange={setOpen}>
           <ModalContent>
-            <SetupModalContent
-              title={"Install NetBird"}
-              setupKey={setupKey.key}
-            />
+            <SetupModalContent title={"Install ATLA client"} />
           </ModalContent>
         </Modal>
       )}

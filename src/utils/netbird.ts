@@ -3,14 +3,6 @@ import loadConfig from "@utils/config";
 const config = loadConfig();
 export const GRPC_API_ORIGIN = (config as any).grpcApiOrigin;
 
-export const getNetBirdUpCommand = () => {
-  let cmd = "netbird up";
-  if (GRPC_API_ORIGIN) {
-    cmd += " --management-url " + GRPC_API_ORIGIN;
-  }
-  return cmd;
-};
-
 export const getInstallUrl = () => {
   return window.location.origin + "/install";
 };

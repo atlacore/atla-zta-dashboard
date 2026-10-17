@@ -67,7 +67,7 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Peer <Value>{m.name}</Value> <PeerConnectionInfo meta={m} /> was added
-        with the NetBird IP <Value>{m.ip}</Value> using the setup key{" "}
+        with the ATLA IP <Value>{m.ip}</Value> using the setup key{" "}
         <Value>{m.setup_key_name}</Value>
       </div>
     );
@@ -168,7 +168,7 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Peer <Value>{m.name}</Value> <PeerConnectionInfo meta={m} /> with
-        NetBird IP <Value>{m.ip}</Value> was deleted
+        ATLA IP <Value>{m.ip}</Value> was deleted
       </div>
     );
 
@@ -176,7 +176,7 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Peer <Value>{m.name}</Value> <PeerConnectionInfo meta={m} /> was added
-        with the NetBird IP <Value>{m.ip}</Value>
+        with the ATLA IP <Value>{m.ip}</Value>
       </div>
     );
 
@@ -184,14 +184,14 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Peer <Value>{m.name}</Value> <PeerConnectionInfo meta={m} /> with
-        NetBird IP <Value>{m.ip}</Value> was updated
+        ATLA IP <Value>{m.ip}</Value> was updated
       </div>
     );
 
   if (event.activity_code == "user.join")
     return (
       <div className={"inline"}>
-        User <Value>{m.username}</Value> joined NetBird
+        User <Value>{m.username}</Value> joined ATLA ZTA
       </div>
     );
 
@@ -207,7 +207,7 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         <Value>{event.meta.username}</Value> <Value>{event.meta.email}</Value>{" "}
-        was created by <Value>{event?.initiator_name || "NetBird"}</Value>
+        was created by <Value>{event?.initiator_name || "ATLA ZTA"}</Value>
       </div>
     );
 
@@ -347,14 +347,14 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Group <Value>{m.group}</Value> was removed from the peer with the
-        NetBird IP <Value>{m.peer_ip}</Value>
+        ATLA IP <Value>{m.peer_ip}</Value>
       </div>
     );
 
   if (event.activity_code == "peer.group.add")
     return (
       <div className={"inline"}>
-        Group <Value>{m.group}</Value> was added to the peer with the NetBird IP{" "}
+        Group <Value>{m.group}</Value> was added to the peer with the ATLA IP{" "}
         <Value>{m.peer_ip}</Value>
       </div>
     );
@@ -397,7 +397,7 @@ export default function ActivityDescription({ event }: Props) {
   if (event.activity_code == "peer.rename")
     return (
       <div className={"inline"}>
-        Peer with the NetBird IP <Value>{m.ip}</Value> was renamed to{" "}
+        Peer with the ATLA IP <Value>{m.ip}</Value> was renamed to{" "}
         <Value>{m.name}</Value>
       </div>
     );
@@ -405,7 +405,7 @@ export default function ActivityDescription({ event }: Props) {
   if (event.activity_code == "peer.approve")
     return (
       <div className={"inline"}>
-        Peer with the NetBird IP <Value>{m.ip}</Value> was approved
+        Peer with the ATLA IP <Value>{m.ip}</Value> was approved
       </div>
     );
 
@@ -421,7 +421,7 @@ export default function ActivityDescription({ event }: Props) {
     return (
       <div className={"inline"}>
         Peer <Value>{m.name}</Value> <PeerConnectionInfo meta={m} /> was added
-        with the NetBird IP <Value>{m.ip}</Value>
+        with the ATLA IP <Value>{m.ip}</Value>
       </div>
     );
 
@@ -1121,21 +1121,26 @@ export default function ActivityDescription({ event }: Props) {
 
       {isLocalDev() && !isProduction() && (
         <FullTooltip
+          contentClassName={"max-w-lg px-4 py-3"}
           content={
-            <div className={"pb-1"}>
-              <Label className={"mb-3"}>Activity Code</Label>
-              <Value>{event.activity_code}</Value>
-              <Label className={"my-3"}>Meta</Label>
-              {meta &&
-                meta.map((item) => (
-                  <React.Fragment key={item?.key}>
-                    <div className={"inline"}>
-                      <Value>
-                        {item?.key} = {item?.value}
-                      </Value>
-                    </div>
-                  </React.Fragment>
+            <div className={"flex flex-col gap-2"}>
+              <Label className={"mb-0"}>Activity Code</Label>
+              <div>
+                <Value>{event.activity_code}</Value>
+              </div>
+              <Label className={"mb-0 mt-2"}>Meta</Label>
+              <div className={"flex flex-wrap gap-1.5"}>
+                {meta?.map((item) => (
+                  <Value
+                    key={item?.key}
+                    className={"max-h-none break-all text-left"}
+                  >
+                    <span className={"text-nb-gray-400"}>{item?.key}</span>
+                    {" = "}
+                    {item?.value}
+                  </Value>
                 ))}
+              </div>
             </div>
           }
         >
