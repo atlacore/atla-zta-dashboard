@@ -3,7 +3,6 @@
 import Breadcrumbs from "@components/Breadcrumbs";
 import Button from "@components/Button";
 import Card from "@components/Card";
-import { Label } from "@components/Label";
 import { notify } from "@components/Notification";
 import Separator from "@components/Separator";
 import FullScreenLoading from "@components/ui/FullScreenLoading";
@@ -12,7 +11,7 @@ import useRedirect from "@hooks/useRedirect";
 import { useApiCall } from "@utils/api";
 import { generateColorFromString } from "@utils/helpers";
 import dayjs from "dayjs";
-import { Ban, Mail, User2 } from "lucide-react";
+import { Ban, Mail, ShieldIcon, User2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -68,7 +67,7 @@ type Props = {
 
 function UserOverview({ user, canEdit }: Readonly<Props>) {
   const router = useRouter();
-  const userRequest = useApiCall<User>("/ui/user");
+  const userRequest = useApiCall<User>("/ui/users");
   const { mutate } = useSWRConfig();
   const { loggedInUser } = useLoggedInUser();
   const { permission } = usePermissions();
@@ -158,22 +157,30 @@ function UserOverview({ user, canEdit }: Readonly<Props>) {
           <UserInformationCard user={user} />
 
           {canEdit && (
-            <div className={"flex flex-col gap-8 w-1/2"}>
-              <div className={"flex items-start"}>
-                <div className={"w-2/3"}>
-                  <Label>User Role</Label>
-                </div>
-                <div className={"w-1/3"}>
-                  <UserRoleSelector
-                    value={role}
-                    onChange={setRole}
-                    hideOwner={false}
-                    currentUser={user}
-                    disabled={isLoggedInUser || !permission.users.update}
-                  />
-                </div>
-              </div>
-            </div>
+            <Card>
+              <Card.List>
+                <Card.ListItem
+                  tooltip={false}
+                  label={
+                    <span className={"flex items-center gap-2.5 whitespace-nowrap"}>
+                      <ShieldIcon size={16} />
+                      User Role
+                    </span>
+                  }
+                  value={
+                    <div className={"w-48"}>
+                      <UserRoleSelector
+                        value={role}
+                        onChange={setRole}
+                        hideOwner={false}
+                        currentUser={user}
+                        disabled={isLoggedInUser || !permission.users.update}
+                      />
+                    </div>
+                  }
+                />
+              </Card.List>
+            </Card>
           )}
         </div>
       </div>

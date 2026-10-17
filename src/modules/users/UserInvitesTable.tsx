@@ -21,9 +21,14 @@ import UserInviteModal from "@/modules/users/UserInviteModal";
 // ── Status / role cells ───────────────────────────────────────────────────────
 
 function InviteStatusCell({ invite }: Readonly<{ invite: Invite }>) {
-  if (invite.acceptedAt) return <Badge variant={"green"}>Accepted</Badge>;
-  if (dayjs(invite.expiresAt).isBefore(dayjs())) return <Badge variant={"red"}>Expired</Badge>;
-  return <Badge variant={"yellow"}>Pending</Badge>;
+  const badge = invite.acceptedAt ? (
+    <Badge variant={"green"}>Accepted</Badge>
+  ) : dayjs(invite.expiresAt).isBefore(dayjs()) ? (
+    <Badge variant={"red"}>Expired</Badge>
+  ) : (
+    <Badge variant={"yellow"}>Pending</Badge>
+  );
+  return <div className={"flex items-center"}>{badge}</div>;
 }
 
 const ROLE_ICON: Record<Role, React.ReactNode> = {
@@ -35,10 +40,12 @@ const ROLE_ICON: Record<Role, React.ReactNode> = {
 
 function InviteRoleCell({ role }: Readonly<{ role: Role }>) {
   return (
-    <Badge variant={role === Role.Owner ? "netbird" : "gray"}>
-      {ROLE_ICON[role]}
-      {role.charAt(0).toUpperCase() + role.slice(1)}
-    </Badge>
+    <div className={"flex items-center"}>
+      <Badge variant={role === Role.Owner ? "netbird" : "gray"}>
+        {ROLE_ICON[role]}
+        {role.charAt(0).toUpperCase() + role.slice(1)}
+      </Badge>
+    </div>
   );
 }
 
@@ -74,7 +81,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function UserInvitesTable({ invites, isLoading, headingTarget }: Readonly<Props>) {
+export default function UserInvitesTable({
+  invites,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
 
@@ -91,7 +102,9 @@ export default function UserInvitesTable({ invites, isLoading, headingTarget }: 
       ),
       sortingFn: "text",
       cell: ({ row }) => (
-        <span className={"text-sm font-medium"}>{row.original.extSub}</span>
+        <div className={"px-2 py-1 text-sm font-medium"}>
+          {row.original.extSub}
+        </div>
       ),
     },
     {

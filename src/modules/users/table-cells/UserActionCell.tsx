@@ -18,7 +18,7 @@ export default function UserActionCell({ user }: Readonly<Props>) {
   const { confirm } = useDialog();
   const { permission } = usePermissions();
   const { loggedInUser } = useLoggedInUser();
-  const userRequest = useApiCall<User>("/ui/user");
+  const userRequest = useApiCall<User>("/ui/users");
   const { mutate } = useSWRConfig();
 
   const isSelf = loggedInUser?.id === user.id;

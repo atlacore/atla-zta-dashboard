@@ -12,7 +12,7 @@ const full: Permission = { create: true, read: true, update: true, delete: true 
 const readOnly: Permission = { create: false, read: true, update: false, delete: false };
 const none: Permission = { create: false, read: false, update: false, delete: false };
 
-function buildPermissions(role: string | undefined): { isRestricted: boolean; permission: Permissions["modules"] } {
+export function buildPermissions(role: string | undefined): { isRestricted: boolean; permission: Permissions["modules"] } {
   const isAdmin = role === "owner" || role === "admin";
   const isAuditor = role === "auditor";
 

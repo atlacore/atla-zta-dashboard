@@ -13,7 +13,7 @@ type Props = {
 };
 
 export default function UserBlockCell({ user, isUserPage = false }: Props) {
-  const userRequest = useApiCall<User>("/ui/user");
+  const userRequest = useApiCall<User>("/ui/users");
   const { mutate } = useSWRConfig();
   const { confirm } = useDialog();
   const { permission } = usePermissions();
