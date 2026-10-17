@@ -16,13 +16,8 @@ import { useSWRConfig } from "swr";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { SDKKey, SDKKeyCreateResponse } from "@/interfaces/SetupKey";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import ActionTooltip from "@components/ActionTooltip";
+import FormModal from "@components/modal/FormModal";
 import { Label } from "@components/Label";
 import { Input } from "@components/Input";
 import { useDialog } from "@/contexts/DialogProvider";
@@ -35,7 +30,11 @@ type CreateSDKKeyModalProps = {
   onCreated: () => void;
 };
 
-function CreateSDKKeyModal({ open, onOpenChange, onCreated }: CreateSDKKeyModalProps) {
+function CreateSDKKeyModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateSDKKeyModalProps) {
   const [name, setName] = useState("");
   const [rawKey, setRawKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -71,20 +70,44 @@ function CreateSDKKeyModal({ open, onOpenChange, onCreated }: CreateSDKKeyModalP
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <KeyRound size={16} />
-              {rawKey ? "SDK Key Created" : "Create SDK Key"}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        {!rawKey ? (
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      icon={<KeyRound size={20} />}
+      title={rawKey ? "SDK Key Created" : "Create SDK Key"}
+      description={
+        rawKey
+          ? "Store the key somewhere safe."
+          : "Create a key for machine access via the SDK."
+      }
+      footer={
+        rawKey ? (
+          <Button variant={"primary"} onClick={handleClose}>
+            Done
+          </Button>
+        ) : (
           <>
-            <div className={"px-8 pb-4 flex flex-col gap-4"}>
+            <Button variant={"secondary"} onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              variant={"primary"}
+              onClick={handleCreate}
+              disabled={!name.trim()}
+            >
+              <PlusCircle size={16} />
+              Create
+            </Button>
+          </>
+        )
+      }
+    >
+      {!rawKey ? (
+        <>
+          <div className={"px-8 pb-6 flex flex-col gap-5"}>
+            <div>
               <Label>Name</Label>
               <Input
                 value={name}
@@ -93,42 +116,36 @@ function CreateSDKKeyModal({ open, onOpenChange, onCreated }: CreateSDKKeyModalP
                 onKeyDown={(e) => e.key === "Enter" && handleCreate()}
               />
             </div>
-            <DialogFooter>
-              <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-              <Button variant={"primary"} onClick={handleCreate} disabled={!name.trim()}>
-                <PlusCircle size={16} />
-                Create
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <>
-            <div className={"px-8 pb-4 flex flex-col gap-4"}>
-              <p className={"text-sm text-nb-gray-300"}>
-                Copy this key now — it will not be shown again.
-              </p>
-              <div
-                className={
-                  "flex items-center gap-2 bg-nb-gray-900 border border-nb-gray-800 rounded-md px-3 py-2 font-mono text-xs break-all"
-                }
-              >
-                <span className={"flex-1 select-all"}>{rawKey}</span>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={"px-8 pb-6 flex flex-col gap-5"}>
+            <p className={"text-sm text-nb-gray-300"}>
+              Copy this key now — it will not be shown again.
+            </p>
+            <div
+              className={
+                "flex items-center gap-2 bg-nb-gray-900 border border-nb-gray-800 rounded-md px-3 py-2 font-mono text-xs break-all"
+              }
+            >
+              <span className={"flex-1 select-all"}>{rawKey}</span>
+              <ActionTooltip label={"Copy"}>
                 <button
                   onClick={handleCopy}
-                  className={"text-nb-gray-400 hover:text-white transition-colors shrink-0"}
+                  className={
+                    "text-nb-gray-400 hover:text-white transition-colors shrink-0"
+                  }
                 >
                   <Copy size={14} />
                 </button>
-              </div>
-              {copied && <p className={"text-xs text-green-400"}>Copied!</p>}
+              </ActionTooltip>
             </div>
-            <DialogFooter>
-              <Button variant={"primary"} onClick={handleClose}>Done</Button>
-            </DialogFooter>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+            {copied && <p className={"text-xs text-green-400"}>Copied!</p>}
+          </div>
+        </>
+      )}
+    </FormModal>
   );
 }
 
@@ -140,7 +157,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: Readonly<Props>) {
+export default function SetupKeysTable({
+  setupKeys,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
@@ -156,14 +177,17 @@ export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: 
   const revoke = async (key: SDKKey) => {
     const choice = await confirm({
       title: `Revoke '${key.name}'?`,
-      description: "This key will be permanently revoked and can no longer be used.",
+      description:
+        "This key will be permanently revoked and can no longer be used.",
       confirmText: "Revoke",
       cancelText: "Cancel",
       type: "danger",
     });
     if (!choice) return;
 
-    const promise = sdkKeyRequest.del(undefined, `/${key.id}`).then(() => mutate("/ui/sdk-keys"));
+    const promise = sdkKeyRequest
+      .del(undefined, `/${key.id}`)
+      .then(() => mutate("/ui/sdk-keys"));
     notify({
       title: "Revoke SDK Key",
       description: `Key '${key.name}' successfully revoked.`,
@@ -213,7 +237,11 @@ export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: 
         }
         const expired = dayjs(row.original.expiresAt).isBefore(dayjs());
         return (
-          <span className={`text-sm ${expired ? "text-red-400" : "text-nb-gray-300"}`}>
+          <span
+            className={`text-sm ${
+              expired ? "text-red-400" : "text-nb-gray-300"
+            }`}
+          >
             {dayjs(row.original.expiresAt).format("MMM D, YYYY")}
           </span>
         );
@@ -241,6 +269,7 @@ export default function SetupKeysTable({ setupKeys, isLoading, headingTarget }: 
               variant={"danger-outline"}
               className={"!px-3"}
               onClick={() => revoke(row.original)}
+              tooltip={"Revoke key"}
             >
               <Trash2 size={14} />
             </Button>

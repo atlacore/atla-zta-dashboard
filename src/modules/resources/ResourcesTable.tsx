@@ -6,13 +6,7 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import HelpText from "@components/HelpText";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
@@ -67,7 +61,11 @@ type CreateResourceModalProps = {
   onCreated: () => void;
 };
 
-function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceModalProps) {
+function CreateResourceModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateResourceModalProps) {
   const [name, setName] = useState("");
   const [kind, setKind] = useState<ResourceKind>("server");
   const [credProfile, setCredProfile] = useState<ResourceCredProfile>("none");
@@ -79,11 +77,17 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
   const [dnsLabel, setDnsLabel] = useState("");
   const resourceRequest = useApiCall<Resource>("/ui/resources");
   const { data: zones } = useFetchApi<DNSZone[]>("/ui/dns/zones");
-  const activeZones = useMemo(() => zones?.filter((z) => z.isActive) ?? [], [zones]);
+  const activeZones = useMemo(
+    () => zones?.filter((z) => z.isActive) ?? [],
+    [zones],
+  );
 
   const labelPreview = useMemo(() => {
     const source = dnsLabel.trim() || name;
-    return source.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    return source
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   }, [dnsLabel, name]);
   const selectedZone = activeZones.find((z) => z.id === dnsZoneId);
 
@@ -133,146 +137,164 @@ function CreateResourceModal({ open, onOpenChange, onCreated }: CreateResourceMo
   const isValid = name.trim() && region.trim();
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-lg"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <BoxIcon size={16} />
-              Create Resource
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={"e.g. prod-db"}
-            />
-          </div>
-          <div>
-            <Label>Kind</Label>
-            <Select value={kind} onValueChange={(v) => setKind(v as ResourceKind)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {KIND_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Credential profile</Label>
-            <Select value={credProfile} onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CRED_PROFILE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Region</Label>
-            <Input
-              value={region}
-              onChange={(e) => setRegion(e.target.value)}
-              placeholder={"e.g. us-east-1"}
-            />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={"Optional"}
-            />
-          </div>
-          <div className={"grid grid-cols-2 gap-4"}>
-            <div>
-              <Label>Host</Label>
-              <Input
-                value={host}
-                onChange={(e) => setHost(e.target.value)}
-                placeholder={"Optional — stored in Vault"}
-              />
-            </div>
-            <div>
-              <Label>Port</Label>
-              <Input
-                value={port}
-                onChange={(e) => setPort(e.target.value)}
-                placeholder={"Optional"}
-                type={"number"}
-              />
-            </div>
-          </div>
-
-          {host.trim() && (
-            <div className={"grid grid-cols-2 gap-4"}>
-              <div>
-                <Label>DNS zone</Label>
-                <Select value={dnsZoneId || "__auto__"} onValueChange={(v) => setDnsZoneId(v === "__auto__" ? "" : v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={"__auto__"}>Auto-detect</SelectItem>
-                    {activeZones.map((z) => (
-                      <SelectItem key={z.id} value={z.id}>
-                        {z.domain}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>DNS label</Label>
-                <Input
-                  value={dnsLabel}
-                  onChange={(e) => setDnsLabel(e.target.value)}
-                  placeholder={"Default: resource name"}
-                />
-              </div>
-              <div className={"col-span-2"}>
-                <HelpText>
-                  Record preview:{" "}
-                  <span className={"font-mono"}>
-                    {labelPreview || "?"}.{selectedZone?.domain ?? "<auto-detected zone>"}
-                  </span>
-                  {!selectedZone && activeZones.length !== 1 && (
-                    <>
-                      {" "}— {activeZones.length === 0
-                        ? "no active zones, no record will be created"
-                        : "multiple active zones, pick one or none will be created"}
-                    </>
-                  )}
-                </HelpText>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleCreate} disabled={!isValid}>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      icon={<BoxIcon size={20} />}
+      title={"Create Resource"}
+      description={
+        "Register a server, database, web app or cluster to protect."
+      }
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant={"primary"}
+            onClick={handleCreate}
+            disabled={!isValid}
+          >
             <PlusCircle size={16} />
             Create
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={"e.g. prod-db"}
+          />
+        </div>
+        <div>
+          <Label>Kind</Label>
+          <Select
+            value={kind}
+            onValueChange={(v) => setKind(v as ResourceKind)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {KIND_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Credential profile</Label>
+          <Select
+            value={credProfile}
+            onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CRED_PROFILE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Region</Label>
+          <Input
+            value={region}
+            onChange={(e) => setRegion(e.target.value)}
+            placeholder={"e.g. us-east-1"}
+          />
+        </div>
+        <div>
+          <Label>Description</Label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={"Optional"}
+          />
+        </div>
+        <div className={"grid grid-cols-2 gap-4"}>
+          <div>
+            <Label>Host</Label>
+            <Input
+              value={host}
+              onChange={(e) => setHost(e.target.value)}
+              placeholder={"Optional — stored in Vault"}
+            />
+          </div>
+          <div>
+            <Label>Port</Label>
+            <Input
+              value={port}
+              onChange={(e) => setPort(e.target.value)}
+              placeholder={"Optional"}
+              type={"number"}
+            />
+          </div>
+        </div>
+
+        {host.trim() && (
+          <div className={"grid grid-cols-2 gap-4"}>
+            <div>
+              <Label>DNS zone</Label>
+              <Select
+                value={dnsZoneId || "__auto__"}
+                onValueChange={(v) => setDnsZoneId(v === "__auto__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"__auto__"}>Auto-detect</SelectItem>
+                  {activeZones.map((z) => (
+                    <SelectItem key={z.id} value={z.id}>
+                      {z.domain}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>DNS label</Label>
+              <Input
+                value={dnsLabel}
+                onChange={(e) => setDnsLabel(e.target.value)}
+                placeholder={"Default: resource name"}
+              />
+            </div>
+            <div className={"col-span-2"}>
+              <HelpText>
+                Record preview:{" "}
+                <span className={"font-mono"}>
+                  {labelPreview || "?"}.
+                  {selectedZone?.domain ?? "<auto-detected zone>"}
+                </span>
+                {!selectedZone && activeZones.length !== 1 && (
+                  <>
+                    {" "}
+                    —{" "}
+                    {activeZones.length === 0
+                      ? "no active zones, no record will be created"
+                      : "multiple active zones, pick one or none will be created"}
+                  </>
+                )}
+              </HelpText>
+            </div>
+          </div>
+        )}
+      </div>
+    </FormModal>
   );
 }
 
@@ -285,11 +307,18 @@ type EditResourceModalProps = {
   onSaved: () => void;
 };
 
-function EditResourceModal({ resource, open, onOpenChange, onSaved }: EditResourceModalProps) {
+function EditResourceModal({
+  resource,
+  open,
+  onOpenChange,
+  onSaved,
+}: EditResourceModalProps) {
   const [name, setName] = useState(resource.name);
   const [region, setRegion] = useState(resource.region);
   const [description, setDescription] = useState(resource.description ?? "");
-  const [credProfile, setCredProfile] = useState<ResourceCredProfile>(resource.credProfile);
+  const [credProfile, setCredProfile] = useState<ResourceCredProfile>(
+    resource.credProfile,
+  );
   const resourceRequest = useApiCall<Resource>(`/ui/resources/${resource.id}`);
 
   const handleSave = () => {
@@ -311,51 +340,59 @@ function EditResourceModal({ resource, open, onOpenChange, onSaved }: EditResour
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <PenSquare size={16} />
-              Edit Resource
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <Label>Region</Label>
-            <Input value={region} onChange={(e) => setRegion(e.target.value)} />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Input value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div>
-            <Label>Credential profile</Label>
-            <Select value={credProfile} onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CRED_PROFILE_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>
-                    {o.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={<PenSquare size={20} />}
+      title={"Edit Resource"}
+      description={"Change the resource's name, region or credential profile."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant={"primary"} onClick={handleSave}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleSave}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div>
+          <Label>Region</Label>
+          <Input value={region} onChange={(e) => setRegion(e.target.value)} />
+        </div>
+        <div>
+          <Label>Description</Label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label>Credential profile</Label>
+          <Select
+            value={credProfile}
+            onValueChange={(v) => setCredProfile(v as ResourceCredProfile)}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {CRED_PROFILE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -367,7 +404,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function ResourcesTable({ resources, isLoading, headingTarget }: Readonly<Props>) {
+export default function ResourcesTable({
+  resources,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
@@ -392,9 +433,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
     });
     if (!choice) return;
 
-    const promise = resourceRequest.del(undefined, `/${resource.id}`).then(() =>
-      mutate("/ui/resources"),
-    );
+    const promise = resourceRequest
+      .del(undefined, `/${resource.id}`)
+      .then(() => mutate("/ui/resources"));
     notify({
       title: "Delete Resource",
       description: `Resource '${resource.name}' deleted.`,
@@ -406,7 +447,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
   const columns: ColumnDef<Resource>[] = [
     {
       accessorKey: "name",
-      header: ({ column }) => <DataTableHeader column={column}>Name</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Name</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
         <div className={"flex items-center gap-2"}>
@@ -414,7 +457,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
           <div>
             <p className={"font-medium text-sm"}>{row.original.name}</p>
             {row.original.description && (
-              <p className={"text-xs text-nb-gray-400"}>{row.original.description}</p>
+              <p className={"text-xs text-nb-gray-400"}>
+                {row.original.description}
+              </p>
             )}
           </div>
         </div>
@@ -422,7 +467,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
     },
     {
       accessorKey: "kind",
-      header: ({ column }) => <DataTableHeader column={column}>Kind</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Kind</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
         <span className={"font-mono text-xs bg-nb-gray-900 rounded px-2 py-1"}>
@@ -432,26 +479,35 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
     },
     {
       accessorKey: "credProfile",
-      header: ({ column }) => <DataTableHeader column={column}>Cred Profile</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Cred Profile</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
         <span className={"text-sm text-nb-gray-300"}>
-          {CRED_PROFILE_OPTIONS.find((o) => o.value === row.original.credProfile)?.label ??
-            row.original.credProfile}
+          {CRED_PROFILE_OPTIONS.find(
+            (o) => o.value === row.original.credProfile,
+          )?.label ?? row.original.credProfile}
         </span>
       ),
     },
     {
       accessorKey: "region",
-      header: ({ column }) => <DataTableHeader column={column}>Region</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Region</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
-        <span className={"text-sm text-nb-gray-300"}>{row.original.region}</span>
+        <span className={"text-sm text-nb-gray-300"}>
+          {row.original.region}
+        </span>
       ),
     },
     {
       accessorKey: "hostname",
-      header: ({ column }) => <DataTableHeader column={column}>Hostname</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Hostname</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) =>
         row.original.hostname ? (
@@ -464,12 +520,16 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
     },
     {
       id: "arn",
-      header: ({ column }) => <DataTableHeader column={column}>ARN</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>ARN</DataTableHeader>
+      ),
       cell: ({ row }) => {
         const arn = buildResourceArn(row.original);
         return (
           <span
-            className={"font-mono text-xs text-nb-gray-400 truncate max-w-[260px] block"}
+            className={
+              "font-mono text-xs text-nb-gray-400 truncate max-w-[260px] block"
+            }
             title={arn}
           >
             {arn}
@@ -479,7 +539,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
     },
     {
       accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column}>Created</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Created</DataTableHeader>
+      ),
       sortingFn: "datetime",
       cell: ({ row }) => (
         <span className={"text-sm text-nb-gray-300"}>
@@ -496,6 +558,7 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
             variant={"default-outline"}
             size={"sm"}
             onClick={() => setEditResource(row.original)}
+            tooltip={"Edit"}
           >
             <PenSquare size={14} />
           </Button>
@@ -503,6 +566,7 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
             variant={"danger-outline"}
             size={"sm"}
             onClick={() => deleteResource(row.original)}
+            tooltip={"Delete"}
           >
             <Trash2 size={14} />
           </Button>
@@ -522,7 +586,9 @@ export default function ResourcesTable({ resources, isLoading, headingTarget }: 
         <EditResourceModal
           resource={editResource}
           open={true}
-          onOpenChange={(v) => { if (!v) setEditResource(null); }}
+          onOpenChange={(v) => {
+            if (!v) setEditResource(null);
+          }}
           onSaved={() => mutate("/ui/resources")}
         />
       )}
