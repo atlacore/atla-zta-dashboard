@@ -10,7 +10,7 @@ import { isEmpty } from "lodash";
 import { ExternalLinkIcon } from "lucide-react";
 import * as React from "react";
 import { useMemo, useState } from "react";
-import NetBirdIcon from "@/assets/icons/NetBirdIcon";
+import AtlaIcon from "@/assets/icons/AtlaIcon";
 import { NetBirdVersionCheck } from "@/interfaces/PostureCheck";
 import { PostureCheckCard } from "@/modules/posture-checks/ui/PostureCheckCard";
 
@@ -37,7 +37,7 @@ export const PostureCheckNetBirdVersion = ({
       description={
         "Restrict access to peers with a specific NetBird client version."
       }
-      icon={<NetBirdIcon size={18} />}
+      icon={<AtlaIcon size={18} />}
       modalWidthClass={"max-w-lg"}
       onReset={() => onChange(undefined)}
     >

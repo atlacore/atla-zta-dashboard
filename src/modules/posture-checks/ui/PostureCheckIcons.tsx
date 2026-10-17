@@ -3,7 +3,7 @@ import Image from "next/image";
 import * as React from "react";
 import { FaWindows } from "react-icons/fa6";
 import RoundedFlag from "@/assets/countries/RoundedFlag";
-import NetBirdIcon from "@/assets/icons/NetBirdIcon";
+import AtlaIcon from "@/assets/icons/AtlaIcon";
 import AppleLogo from "@/assets/os-icons/apple.svg";
 
 type Props = {
@@ -27,7 +27,7 @@ export const PostureCheckIcons = () => {
         </div>
       </Circle>
       <Circle className={"z-[3]"}>
-        <NetBirdIcon size={18} />
+        <AtlaIcon size={18} />
       </Circle>
       <Circle className={"top-1 z-[2]"}>
         <div
