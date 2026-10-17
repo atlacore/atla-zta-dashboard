@@ -27,16 +27,11 @@ import {
   LDAPTLSMode,
   providerIconType,
 } from "@/interfaces/IdentityProvider";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import ActionTooltip from "@components/ActionTooltip";
+import CheckboxField from "@components/CheckboxField";
+import FormModal from "@components/modal/FormModal";
 import { Label } from "@components/Label";
 import { Input } from "@components/Input";
-import { ToggleSwitch } from "@components/ToggleSwitch";
 import { SegmentedTabs } from "@components/SegmentedTabs";
 import {
   Select,
@@ -71,13 +66,15 @@ function CopyField({ label, value }: { label: string; value: string }) {
         value={value}
         className={"font-mono text-xs"}
         customSuffix={
-          <button
-            type={"button"}
-            onClick={handleCopy}
-            className={"text-nb-gray-400 hover:text-white transition-colors"}
-          >
-            <Copy size={14} />
-          </button>
+          <ActionTooltip label={"Copy"}>
+            <button
+              type={"button"}
+              onClick={handleCopy}
+              className={"text-nb-gray-400 hover:text-white transition-colors"}
+            >
+              <Copy size={14} />
+            </button>
+          </ActionTooltip>
         }
       />
       {copied && <p className={"text-xs text-green-400"}>Copied!</p>}
@@ -93,8 +90,14 @@ type CreateModalProps = {
   onCreated: () => void;
 };
 
-function CreateIdentityProviderModal({ open, onOpenChange, onCreated }: CreateModalProps) {
-  const providerRequest = useApiCall<IdentityProvider>("/ui/identity-providers");
+function CreateIdentityProviderModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateModalProps) {
+  const providerRequest = useApiCall<IdentityProvider>(
+    "/ui/identity-providers",
+  );
   const [type, setType] = useState<IdentityProviderType>("oidc");
   const [name, setName] = useState("");
   const [issuer, setIssuer] = useState("");
@@ -102,7 +105,9 @@ function CreateIdentityProviderModal({ open, onOpenChange, onCreated }: CreateMo
   const [clientSecret, setClientSecret] = useState("");
   const [ldapHost, setLdapHost] = useState("");
   const [ldapPort, setLdapPort] = useState<number>(389);
-  const [ldapTlsMode, setLdapTlsMode] = useState<LDAPTLSMode>(DEFAULT_LDAP_TLS_MODE);
+  const [ldapTlsMode, setLdapTlsMode] = useState<LDAPTLSMode>(
+    DEFAULT_LDAP_TLS_MODE,
+  );
   const [ldapBindDn, setLdapBindDn] = useState("");
   const [ldapBindPassword, setLdapBindPassword] = useState("");
   const [ldapBaseDn, setLdapBaseDn] = useState("");
@@ -115,9 +120,20 @@ function CreateIdentityProviderModal({ open, onOpenChange, onCreated }: CreateMo
 
   const canSubmit =
     type === "ldap"
-      ? !!(name.trim() && ldapHost.trim() && ldapBindDn.trim() && ldapBindPassword.trim() &&
-          ldapBaseDn.trim() && ldapUserFilter.trim())
-      : !!(name.trim() && issuer.trim() && clientId.trim() && clientSecret.trim());
+      ? !!(
+          name.trim() &&
+          ldapHost.trim() &&
+          ldapBindDn.trim() &&
+          ldapBindPassword.trim() &&
+          ldapBaseDn.trim() &&
+          ldapUserFilter.trim()
+        )
+      : !!(
+          name.trim() &&
+          issuer.trim() &&
+          clientId.trim() &&
+          clientSecret.trim()
+        );
 
   const handleCreate = () => {
     if (!canSubmit) return;
@@ -155,12 +171,20 @@ function CreateIdentityProviderModal({ open, onOpenChange, onCreated }: CreateMo
       onCreated();
       return res;
     });
-    promise.catch((err) => setError(err?.message ?? "Failed to create connection"));
+    promise.catch((err) =>
+      setError(err?.message ?? "Failed to create connection"),
+    );
     notify({
       title: "Add Identity Provider",
-      description: type === "ldap" ? "AD/LDAP connection successfully created." : "OIDC connection successfully created.",
+      description:
+        type === "ldap"
+          ? "AD/LDAP connection successfully created."
+          : "OIDC connection successfully created.",
       promise,
-      loadingMessage: type === "ldap" ? "Binding to the directory..." : "Running discovery against the issuer...",
+      loadingMessage:
+        type === "ldap"
+          ? "Binding to the directory..."
+          : "Running discovery against the issuer...",
     });
   };
 
@@ -186,211 +210,251 @@ function CreateIdentityProviderModal({ open, onOpenChange, onCreated }: CreateMo
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-lg"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              {created ? idpIcon(providerIconType(created)) : <Settings2 size={16} />}
-              {created ? "Connection Created" : "Add Identity Provider"}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        {!created ? (
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      icon={
+        created ? idpIcon(providerIconType(created)) : <Settings2 size={20} />
+      }
+      title={created ? "Connection Created" : "Add Identity Provider"}
+      description={
+        created
+          ? "Share the login details with your users."
+          : "Connect an external identity provider for sign-in."
+      }
+      footer={
+        created ? (
+          <Button variant={"primary"} onClick={handleClose}>
+            Done
+          </Button>
+        ) : (
           <>
-            <div className={"px-8 pb-4 flex flex-col gap-4"}>
-              <SegmentedTabs value={type} onChange={(v) => setType(v as IdentityProviderType)}>
-                <SegmentedTabs.List>
-                  <SegmentedTabs.Trigger value={"oidc"}>OIDC</SegmentedTabs.Trigger>
-                  <SegmentedTabs.Trigger value={"ldap"}>Active Directory / LDAP</SegmentedTabs.Trigger>
-                </SegmentedTabs.List>
-              </SegmentedTabs>
-              <div className={"flex flex-col gap-2"}>
-                <Label>Name</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={type === "ldap" ? "e.g. Corporate AD" : "e.g. Okta"}
-                  autoComplete={"off"}
-                />
-              </div>
+            <Button variant={"secondary"} onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button
+              variant={"primary"}
+              onClick={handleCreate}
+              disabled={!canSubmit}
+            >
+              <PlusCircle size={16} />
+              Create
+            </Button>
+          </>
+        )
+      }
+    >
+      {!created ? (
+        <>
+          <div className={"px-8 pb-6 flex flex-col gap-5"}>
+            <SegmentedTabs
+              value={type}
+              onChange={(v) => setType(v as IdentityProviderType)}
+            >
+              <SegmentedTabs.List>
+                <SegmentedTabs.Trigger value={"oidc"}>
+                  OIDC
+                </SegmentedTabs.Trigger>
+                <SegmentedTabs.Trigger value={"ldap"}>
+                  Active Directory / LDAP
+                </SegmentedTabs.Trigger>
+              </SegmentedTabs.List>
+            </SegmentedTabs>
+            <div className={"flex flex-col gap-2"}>
+              <Label>Name</Label>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={
+                  type === "ldap" ? "e.g. Corporate AD" : "e.g. Okta"
+                }
+                autoComplete={"off"}
+              />
+            </div>
 
-              {type === "oidc" ? (
-                <>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Issuer URL</Label>
+            {type === "oidc" ? (
+              <>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Issuer URL</Label>
+                  <Input
+                    value={issuer}
+                    onChange={(e) => setIssuer(e.target.value)}
+                    placeholder={"https://example.okta.com"}
+                    autoComplete={"off"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Client ID</Label>
+                  <Input
+                    value={clientId}
+                    onChange={(e) => setClientId(e.target.value)}
+                    autoComplete={"off"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Client Secret</Label>
+                  <Input
+                    type={"password"}
+                    showPasswordToggle
+                    autoComplete={"new-password"}
+                    value={clientSecret}
+                    onChange={(e) => setClientSecret(e.target.value)}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={"flex gap-4"}>
+                  <div className={"flex flex-col gap-2 flex-1"}>
+                    <Label>Host</Label>
                     <Input
-                      value={issuer}
-                      onChange={(e) => setIssuer(e.target.value)}
-                      placeholder={"https://example.okta.com"}
+                      value={ldapHost}
+                      onChange={(e) => setLdapHost(e.target.value)}
+                      placeholder={"ad.corp.example.com"}
                       autoComplete={"off"}
                     />
                   </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Client ID</Label>
-                    <Input
-                      value={clientId}
-                      onChange={(e) => setClientId(e.target.value)}
-                      autoComplete={"off"}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Client Secret</Label>
-                    <Input
-                      type={"password"}
-                      showPasswordToggle
-                      autoComplete={"new-password"}
-                      value={clientSecret}
-                      onChange={(e) => setClientSecret(e.target.value)}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className={"flex gap-4"}>
-                    <div className={"flex flex-col gap-2 flex-1"}>
-                      <Label>Host</Label>
-                      <Input
-                        value={ldapHost}
-                        onChange={(e) => setLdapHost(e.target.value)}
-                        placeholder={"ad.corp.example.com"}
-                        autoComplete={"off"}
-                      />
-                    </div>
-                    <div className={"flex flex-col gap-2 w-32"}>
-                      <Label>Port</Label>
-                      <Select value={String(ldapPort)} onValueChange={(v) => setLdapPort(Number(v))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {LDAP_PORTS.map((p) => (
-                            <SelectItem key={p} value={String(p)}>{p}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Transport</Label>
-                    <Select value={ldapTlsMode} onValueChange={(v) => setLdapTlsMode(v as LDAPTLSMode)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                  <div className={"flex flex-col gap-2 w-32"}>
+                    <Label>Port</Label>
+                    <Select
+                      value={String(ldapPort)}
+                      onValueChange={(v) => setLdapPort(Number(v))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
-                        {LDAP_TLS_MODES.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
+                        {LDAP_PORTS.map((p) => (
+                          <SelectItem key={p} value={String(p)}>
+                            {p}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Bind DN</Label>
-                    <Input
-                      value={ldapBindDn}
-                      onChange={(e) => setLdapBindDn(e.target.value)}
-                      placeholder={"CN=svc-atla,OU=Service Accounts,DC=corp,DC=example,DC=com"}
-                      autoComplete={"off"}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Bind Password</Label>
-                    <Input
-                      type={"password"}
-                      showPasswordToggle
-                      autoComplete={"new-password"}
-                      value={ldapBindPassword}
-                      onChange={(e) => setLdapBindPassword(e.target.value)}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Base DN</Label>
-                    <Input
-                      value={ldapBaseDn}
-                      onChange={(e) => setLdapBaseDn(e.target.value)}
-                      placeholder={"DC=corp,DC=example,DC=com"}
-                      autoComplete={"off"}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>User Filter</Label>
-                    <Input
-                      value={ldapUserFilter}
-                      onChange={(e) => setLdapUserFilter(e.target.value)}
-                      placeholder={"(sAMAccountName=%s)"}
-                      autoComplete={"off"}
-                      className={"font-mono text-xs"}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Group Base DN (optional)</Label>
-                    <Input
-                      value={ldapGroupBaseDn}
-                      onChange={(e) => setLdapGroupBaseDn(e.target.value)}
-                      placeholder={"defaults to Base DN"}
-                      autoComplete={"off"}
-                    />
-                  </div>
-                  <div className={"flex flex-col gap-2"}>
-                    <Label>Group Filter (optional)</Label>
-                    <Input
-                      value={ldapGroupFilter}
-                      onChange={(e) => setLdapGroupFilter(e.target.value)}
-                      placeholder={"(&(objectClass=group)(member=%s))"}
-                      autoComplete={"off"}
-                      className={"font-mono text-xs"}
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className={"flex items-center justify-between"}>
-                <div>
-                  <Label>Auto-provision users</Label>
-                  <p className={"text-xs text-nb-gray-400"}>
-                    Create a new user on first login instead of requiring one
-                    to already exist.
-                  </p>
                 </div>
-                <ToggleSwitch
-                  checked={autoProvision}
-                  onCheckedChange={setAutoProvision}
-                />
-              </div>
-              {error && <p className={"text-xs text-red-400"}>{error}</p>}
-            </div>
-            <DialogFooter>
-              <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-              <Button variant={"primary"} onClick={handleCreate} disabled={!canSubmit}>
-                <PlusCircle size={16} />
-                Create
-              </Button>
-            </DialogFooter>
-          </>
-        ) : (
-          <>
-            <div className={"px-8 pb-4 flex flex-col gap-4"}>
-              {created.type === "ldap" ? (
-                <p className={"text-sm text-nb-gray-300"}>
-                  Share the dashboard login link with your users — they&apos;ll
-                  sign in with their AD username and password.
-                </p>
-              ) : (
-                <p className={"text-sm text-nb-gray-300"}>
-                  Paste the redirect URI into your IdP&apos;s app registration,
-                  then share the dashboard login link with your users.
-                </p>
-              )}
-              {created.type === "oidc" && (
-                <CopyField label={"Redirect URI"} value={created.redirectUri ?? ""} />
-              )}
-              <CopyField label={"Dashboard Login Link"} value={created.dashboardLoginUrl} />
-              <CopyField label={"Direct Login URL"} value={created.loginUrl} />
-            </div>
-            <DialogFooter>
-              <Button variant={"primary"} onClick={handleClose}>Done</Button>
-            </DialogFooter>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Transport</Label>
+                  <Select
+                    value={ldapTlsMode}
+                    onValueChange={(v) => setLdapTlsMode(v as LDAPTLSMode)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LDAP_TLS_MODES.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Bind DN</Label>
+                  <Input
+                    value={ldapBindDn}
+                    onChange={(e) => setLdapBindDn(e.target.value)}
+                    placeholder={
+                      "CN=svc-atla,OU=Service Accounts,DC=corp,DC=example,DC=com"
+                    }
+                    autoComplete={"off"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Bind Password</Label>
+                  <Input
+                    type={"password"}
+                    showPasswordToggle
+                    autoComplete={"new-password"}
+                    value={ldapBindPassword}
+                    onChange={(e) => setLdapBindPassword(e.target.value)}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Base DN</Label>
+                  <Input
+                    value={ldapBaseDn}
+                    onChange={(e) => setLdapBaseDn(e.target.value)}
+                    placeholder={"DC=corp,DC=example,DC=com"}
+                    autoComplete={"off"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>User Filter</Label>
+                  <Input
+                    value={ldapUserFilter}
+                    onChange={(e) => setLdapUserFilter(e.target.value)}
+                    placeholder={"(sAMAccountName=%s)"}
+                    autoComplete={"off"}
+                    className={"font-mono text-xs"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Group Base DN (optional)</Label>
+                  <Input
+                    value={ldapGroupBaseDn}
+                    onChange={(e) => setLdapGroupBaseDn(e.target.value)}
+                    placeholder={"defaults to Base DN"}
+                    autoComplete={"off"}
+                  />
+                </div>
+                <div className={"flex flex-col gap-2"}>
+                  <Label>Group Filter (optional)</Label>
+                  <Input
+                    value={ldapGroupFilter}
+                    onChange={(e) => setLdapGroupFilter(e.target.value)}
+                    placeholder={"(&(objectClass=group)(member=%s))"}
+                    autoComplete={"off"}
+                    className={"font-mono text-xs"}
+                  />
+                </div>
+              </>
+            )}
+
+            <CheckboxField
+              label={"Auto-provision users"}
+              checked={autoProvision}
+              onChange={setAutoProvision}
+              description={
+                "Create a new user on first login instead of requiring one to already exist."
+              }
+            />
+            {error && <p className={"text-xs text-red-400"}>{error}</p>}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className={"px-8 pb-6 flex flex-col gap-5"}>
+            {created.type === "ldap" ? (
+              <p className={"text-sm text-nb-gray-300"}>
+                Share the dashboard login link with your users — they&apos;ll
+                sign in with their AD username and password.
+              </p>
+            ) : (
+              <p className={"text-sm text-nb-gray-300"}>
+                Paste the redirect URI into your IdP&apos;s app registration,
+                then share the dashboard login link with your users.
+              </p>
+            )}
+            {created.type === "oidc" && (
+              <CopyField
+                label={"Redirect URI"}
+                value={created.redirectUri ?? ""}
+              />
+            )}
+            <CopyField
+              label={"Dashboard Login Link"}
+              value={created.dashboardLoginUrl}
+            />
+            <CopyField label={"Direct Login URL"} value={created.loginUrl} />
+          </div>
+        </>
+      )}
+    </FormModal>
   );
 }
 
@@ -402,16 +466,26 @@ type EditModalProps = {
   onUpdated: () => void;
 };
 
-function EditIdentityProviderModal({ provider, onOpenChange, onUpdated }: EditModalProps) {
-  const providerRequest = useApiCall<IdentityProvider>("/ui/identity-providers");
+function EditIdentityProviderModal({
+  provider,
+  onOpenChange,
+  onUpdated,
+}: EditModalProps) {
+  const providerRequest = useApiCall<IdentityProvider>(
+    "/ui/identity-providers",
+  );
   const [name, setName] = useState(provider?.name ?? "");
   const [clientSecret, setClientSecret] = useState("");
   const [ldapHost, setLdapHost] = useState(provider?.ldapHost ?? "");
   const [ldapBindDn, setLdapBindDn] = useState(provider?.ldapBindDn ?? "");
   const [ldapBindPassword, setLdapBindPassword] = useState("");
   const [ldapBaseDn, setLdapBaseDn] = useState(provider?.ldapBaseDn ?? "");
-  const [ldapUserFilter, setLdapUserFilter] = useState(provider?.ldapUserFilter ?? "");
-  const [autoProvision, setAutoProvision] = useState(provider?.autoProvision ?? false);
+  const [ldapUserFilter, setLdapUserFilter] = useState(
+    provider?.ldapUserFilter ?? "",
+  );
+  const [autoProvision, setAutoProvision] = useState(
+    provider?.autoProvision ?? false,
+  );
   const [isActive, setIsActive] = useState(provider?.isActive ?? true);
 
   // Re-seed local state whenever a different row is opened.
@@ -442,13 +516,17 @@ function EditIdentityProviderModal({ provider, onOpenChange, onUpdated }: EditMo
             ldapBindDn: ldapBindDn.trim(),
             ldapBaseDn: ldapBaseDn.trim(),
             ldapUserFilter: ldapUserFilter.trim(),
-            ...(ldapBindPassword.trim() ? { ldapBindPassword: ldapBindPassword.trim() } : {}),
+            ...(ldapBindPassword.trim()
+              ? { ldapBindPassword: ldapBindPassword.trim() }
+              : {}),
           }
         : clientSecret.trim()
-          ? { clientSecret: clientSecret.trim() }
-          : {}),
+        ? { clientSecret: clientSecret.trim() }
+        : {}),
     };
-    const promise = providerRequest.put(req, `/${provider.id}`).then(() => onUpdated());
+    const promise = providerRequest
+      .put(req, `/${provider.id}`)
+      .then(() => onUpdated());
     notify({
       title: "Update Identity Provider",
       description: "Connection successfully updated.",
@@ -459,100 +537,119 @@ function EditIdentityProviderModal({ provider, onOpenChange, onUpdated }: EditMo
   };
 
   return (
-    <Dialog open={!!provider} onOpenChange={onOpenChange}>
-      <DialogContent className={"max-w-lg"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              {idpIcon(providerIconType(provider))}
-              Edit {provider.name}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div className={"flex flex-col gap-2"}>
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoComplete={"off"}
-            />
-          </div>
-          {isLdap ? (
-            <>
-              <div className={"flex flex-col gap-2"}>
-                <Label>Host</Label>
-                <Input value={ldapHost} onChange={(e) => setLdapHost(e.target.value)} autoComplete={"off"} />
-              </div>
-              <div className={"flex flex-col gap-2"}>
-                <Label>Bind DN</Label>
-                <Input value={ldapBindDn} onChange={(e) => setLdapBindDn(e.target.value)} autoComplete={"off"} />
-              </div>
-              <div className={"flex flex-col gap-2"}>
-                <Label>Base DN</Label>
-                <Input value={ldapBaseDn} onChange={(e) => setLdapBaseDn(e.target.value)} autoComplete={"off"} />
-              </div>
-              <div className={"flex flex-col gap-2"}>
-                <Label>User Filter</Label>
-                <Input
-                  value={ldapUserFilter}
-                  onChange={(e) => setLdapUserFilter(e.target.value)}
-                  autoComplete={"off"}
-                  className={"font-mono text-xs"}
-                />
-              </div>
-            </>
-          ) : (
-            <CopyField label={"Issuer"} value={provider.issuer ?? ""} />
-          )}
-          {!isLdap && <CopyField label={"Redirect URI"} value={provider.redirectUri ?? ""} />}
-          <CopyField label={"Dashboard Login Link"} value={provider.dashboardLoginUrl} />
-          <CopyField label={"Direct Login URL"} value={provider.loginUrl} />
-          <div className={"flex flex-col gap-2"}>
-            <Label>{isLdap ? "New Bind Password" : "New Client Secret"}</Label>
-            <Input
-              type={"password"}
-              showPasswordToggle
-              autoComplete={"new-password"}
-              placeholder={"Leave blank to keep the current secret"}
-              value={isLdap ? ldapBindPassword : clientSecret}
-              onChange={(e) => (isLdap ? setLdapBindPassword(e.target.value) : setClientSecret(e.target.value))}
-            />
-          </div>
-          <div className={"flex items-center justify-between"}>
-            <div>
-              <Label>Auto-provision users</Label>
-              <p className={"text-xs text-nb-gray-400"}>
-                Create a new user on first login instead of requiring one to
-                already exist.
-              </p>
-            </div>
-            <ToggleSwitch
-              checked={autoProvision}
-              onCheckedChange={setAutoProvision}
-            />
-          </div>
-          <div className={"flex items-center justify-between"}>
-            <div>
-              <Label>Active</Label>
-              <p className={"text-xs text-nb-gray-400"}>
-                Disable to hide the login button without deleting the
-                connection.
-              </p>
-            </div>
-            <ToggleSwitch checked={isActive} onCheckedChange={setIsActive} />
-          </div>
-        </div>
-        <DialogFooter>
+    <FormModal
+      open={!!provider}
+      onOpenChange={onOpenChange}
+      icon={idpIcon(providerIconType(provider))}
+      title={<>Edit {provider.name}</>}
+      description={"Change the connection's settings or credentials."}
+      footer={
+        <>
           <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant={"primary"} onClick={handleSave} disabled={!name.trim()}>
+          <Button
+            variant={"primary"}
+            onClick={handleSave}
+            disabled={!name.trim()}
+          >
             Save
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div className={"flex flex-col gap-2"}>
+          <Label>Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete={"off"}
+          />
+        </div>
+        {isLdap ? (
+          <>
+            <div className={"flex flex-col gap-2"}>
+              <Label>Host</Label>
+              <Input
+                value={ldapHost}
+                onChange={(e) => setLdapHost(e.target.value)}
+                autoComplete={"off"}
+              />
+            </div>
+            <div className={"flex flex-col gap-2"}>
+              <Label>Bind DN</Label>
+              <Input
+                value={ldapBindDn}
+                onChange={(e) => setLdapBindDn(e.target.value)}
+                autoComplete={"off"}
+              />
+            </div>
+            <div className={"flex flex-col gap-2"}>
+              <Label>Base DN</Label>
+              <Input
+                value={ldapBaseDn}
+                onChange={(e) => setLdapBaseDn(e.target.value)}
+                autoComplete={"off"}
+              />
+            </div>
+            <div className={"flex flex-col gap-2"}>
+              <Label>User Filter</Label>
+              <Input
+                value={ldapUserFilter}
+                onChange={(e) => setLdapUserFilter(e.target.value)}
+                autoComplete={"off"}
+                className={"font-mono text-xs"}
+              />
+            </div>
+          </>
+        ) : (
+          <CopyField label={"Issuer"} value={provider.issuer ?? ""} />
+        )}
+        {!isLdap && (
+          <CopyField
+            label={"Redirect URI"}
+            value={provider.redirectUri ?? ""}
+          />
+        )}
+        <CopyField
+          label={"Dashboard Login Link"}
+          value={provider.dashboardLoginUrl}
+        />
+        <CopyField label={"Direct Login URL"} value={provider.loginUrl} />
+        <div className={"flex flex-col gap-2"}>
+          <Label>{isLdap ? "New Bind Password" : "New Client Secret"}</Label>
+          <Input
+            type={"password"}
+            showPasswordToggle
+            autoComplete={"new-password"}
+            placeholder={"Leave blank to keep the current secret"}
+            value={isLdap ? ldapBindPassword : clientSecret}
+            onChange={(e) =>
+              isLdap
+                ? setLdapBindPassword(e.target.value)
+                : setClientSecret(e.target.value)
+            }
+          />
+        </div>
+        <CheckboxField
+          label={"Auto-provision users"}
+          checked={autoProvision}
+          onChange={setAutoProvision}
+          description={
+            "Create a new user on first login instead of requiring one to already exist."
+          }
+        />
+        <CheckboxField
+          label={"Active"}
+          checked={isActive}
+          onChange={setIsActive}
+          description={
+            "Disable to hide the login button without deleting the connection."
+          }
+        />
+      </div>
+    </FormModal>
   );
 }
 
@@ -581,14 +678,20 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function IdentityProvidersTable({ providers, isLoading, headingTarget }: Readonly<Props>) {
+export default function IdentityProvidersTable({
+  providers,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
   const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<IdentityProvider | null>(null);
-  const providerRequest = useApiCall<{ status: string }>("/ui/identity-providers");
+  const providerRequest = useApiCall<{ status: string }>(
+    "/ui/identity-providers",
+  );
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
@@ -685,6 +788,7 @@ export default function IdentityProvidersTable({ providers, isLoading, headingTa
               variant={"secondary"}
               className={"!px-3"}
               onClick={() => setEditing(row.original)}
+              tooltip={"Settings"}
             >
               <Settings2 size={14} />
             </Button>
@@ -694,6 +798,7 @@ export default function IdentityProvidersTable({ providers, isLoading, headingTa
               variant={"danger-outline"}
               className={"!px-3"}
               onClick={() => remove(row.original)}
+              tooltip={"Delete"}
             >
               <Trash2 size={14} />
             </Button>

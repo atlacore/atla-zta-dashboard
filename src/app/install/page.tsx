@@ -2,7 +2,7 @@
 
 import { Modal } from "@components/modal/Modal";
 import { useEffect, useState } from "react";
-import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import SetupModal from "@/modules/setup-client-modal/SetupModal";
 
 export default function UnauthenticatedInstallModal() {
   const [open, setOpen] = useState(false);

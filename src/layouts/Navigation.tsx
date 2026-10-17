@@ -1,6 +1,7 @@
 "use client";
 
 import { ScrollArea } from "@components/ScrollArea";
+import loadConfig from "@utils/config";
 import { cn } from "@utils/helpers";
 import AccessControlIcon from "@/assets/icons/AccessControlIcon";
 import ControlCenterIcon from "@/assets/icons/ControlCenterIcon";
@@ -21,6 +22,8 @@ import { SmallBadge } from "@components/ui/SmallBadge";
 import { BoxIcon, Laptop, NetworkIcon, ServerIcon } from "lucide-react";
 import * as React from "react";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
+
+const config = loadConfig();
 
 type Props = {
   fullWidth?: boolean;
@@ -78,23 +81,6 @@ export default function Navigation({
                   icon={<ControlCenterIcon size={16} />}
                   label={
                     <div className={"flex items-center gap-2"}>
-                      Control Center
-                      <SmallBadge
-                        text={"Beta"}
-                        variant={"sky"}
-                        className={"text-[8px] leading-none py-[3px] px-[5px]"}
-                        textClassName={"top-0"}
-                      />
-                    </div>
-                  }
-                  href={"/control-center"}
-                  visible={permission.policies.read}
-                />
-
-                <SidebarItem
-                  icon={<ControlCenterIcon size={16} />}
-                  label={
-                    <div className={"flex items-center gap-2"}>
                       Topology
                       <SmallBadge
                         text={"Preview"}
@@ -104,7 +90,7 @@ export default function Navigation({
                       />
                     </div>
                   }
-                  href={"/control-center-v2"}
+                  href={"/control-center"}
                   visible={permission.policies.read}
                 />
 
@@ -240,7 +226,7 @@ export default function Navigation({
               <SidebarItemGroup>
                 <SidebarItem
                   icon={<DocsIcon />}
-                  href={"https://docs.netbird.io/"}
+                  href={config.docsUrl}
                   target={"_blank"}
                   label="Documentation"
                   visible={true}

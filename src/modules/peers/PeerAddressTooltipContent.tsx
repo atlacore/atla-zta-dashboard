@@ -27,11 +27,11 @@ export const PeerAddressTooltipContent = ({ peer }: Props) => {
     >
       <ListItem
         icon={<MapPin size={14} />}
-        label={"NetBird IP"}
+        label={"ATLA IP"}
         value={
           <CopyToClipboardText
             iconAlignment={"right"}
-            message={"NetBird IP has been copied to your clipboard"}
+            message={"ATLA IP has been copied to your clipboard"}
             alwaysShowIcon={true}
           >
             {peer.ip}

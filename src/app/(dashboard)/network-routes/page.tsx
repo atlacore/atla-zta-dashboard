@@ -45,7 +45,7 @@ export default function NetworkRoutes() {
             <h1 ref={headingRef}>Network Routes</h1>
             <Paragraph>
               Network routes allow you to access other networks like LANs and
-              VPCs without installing NetBird on every resource.
+              VPCs without installing the ATLA client on every resource.
             </Paragraph>
             <Paragraph>
               Learn more about

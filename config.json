@@ -1,4 +1,6 @@
 {
   "apiOrigin": "$ATLA_API_ORIGIN",
-  "sentryDsn": "$ATLA_SENTRY_DSN"
+  "sentryDsn": "$ATLA_SENTRY_DSN",
+  "docsUrl": "$ATLA_DOCS_URL",
+  "publicUrl": "$ATLA_PUBLIC_URL"
 }

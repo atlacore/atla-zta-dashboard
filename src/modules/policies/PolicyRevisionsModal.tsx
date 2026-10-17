@@ -1,12 +1,7 @@
 "use client";
 
 import Button from "@components/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import { notify } from "@components/Notification";
 import SkeletonTable from "@components/skeletons/SkeletonTable";
 import useFetchApi, { useApiCall } from "@utils/api";
@@ -30,13 +25,20 @@ export default function PolicyRevisionsModal({
 }: Readonly<Props>) {
   const { permission } = usePermissions();
   const { confirm } = useDialog();
-  const revisionRequest = useApiCall<{ status: string }>("/ui/policies/revisions");
+  const revisionRequest = useApiCall<{ status: string }>(
+    "/ui/policies/revisions",
+  );
 
   const {
     data: revisions,
     isLoading,
     mutate,
-  } = useFetchApi<RawPolicy[]>(`/ui/policies/${encodeURIComponent(name)}/revisions`, true, false, open);
+  } = useFetchApi<RawPolicy[]>(
+    `/ui/policies/${encodeURIComponent(name)}/revisions`,
+    true,
+    false,
+    open,
+  );
 
   const deleteRevision = async (revision: RawPolicy) => {
     const choice = await confirm({
@@ -49,7 +51,9 @@ export default function PolicyRevisionsModal({
     });
     if (!choice) return;
 
-    const promise = revisionRequest.del(undefined, `/${revision.id}`).then(() => mutate());
+    const promise = revisionRequest
+      .del(undefined, `/${revision.id}`)
+      .then(() => mutate());
     notify({
       title: "Delete Revision",
       description: `Revision ${revision.revision} deleted.`,
@@ -59,56 +63,64 @@ export default function PolicyRevisionsModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={"max-w-2xl"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <HistoryIcon size={16} />
-              Revisions of &apos;{name}&apos;
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className={"px-8 pb-6"}>
-          {isLoading && <SkeletonTable />}
-          {!isLoading && (
-            <ul className={"flex flex-col divide-y dark:divide-nb-gray-900 border dark:border-nb-gray-900 rounded-md"}>
-              {revisions?.map((rev) => (
-                <li
-                  key={rev.id}
-                  className={"px-4 py-2.5 flex items-center justify-between gap-4"}
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      maxWidthClass={"max-w-2xl"}
+      icon={<HistoryIcon size={20} />}
+      title={<>Revisions of &apos;{name}&apos;</>}
+      description={"Previous versions of this policy."}
+      footer={
+        <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
+          Close
+        </Button>
+      }
+    >
+      <div className={"px-8 pb-6"}>
+        {isLoading && <SkeletonTable />}
+        {!isLoading && (
+          <ul
+            className={
+              "flex flex-col divide-y dark:divide-nb-gray-900 border dark:border-nb-gray-900 rounded-md"
+            }
+          >
+            {revisions?.map((rev) => (
+              <li
+                key={rev.id}
+                className={
+                  "px-4 py-2.5 flex items-center justify-between gap-4"
+                }
+              >
+                <div className={"flex items-center gap-3"}>
+                  <span className={"text-sm font-medium"}>
+                    Rev. {rev.revision}
+                  </span>
+                  <span className={"font-mono text-xs text-nb-gray-400"}>
+                    {rev.hash.slice(0, 12)}
+                  </span>
+                  <span className={"text-xs text-nb-gray-400"}>
+                    {dayjs(rev.created_at).format("MMM D, YYYY HH:mm")}
+                  </span>
+                </div>
+                <Button
+                  variant={"danger-outline"}
+                  size={"sm"}
+                  onClick={() => deleteRevision(rev)}
+                  tooltip={"Delete revision"}
+                  disabled={!permission.policies?.delete}
                 >
-                  <div className={"flex items-center gap-3"}>
-                    <span className={"text-sm font-medium"}>
-                      Rev. {rev.revision}
-                    </span>
-                    <span className={"font-mono text-xs text-nb-gray-400"}>
-                      {rev.hash.slice(0, 12)}
-                    </span>
-                    <span className={"text-xs text-nb-gray-400"}>
-                      {dayjs(rev.created_at).format("MMM D, YYYY HH:mm")}
-                    </span>
-                  </div>
-                  <Button
-                    variant={"danger-outline"}
-                    size={"sm"}
-                    onClick={() => deleteRevision(rev)}
-                    disabled={!permission.policies?.delete}
-                  >
-                    <Trash2 size={14} />
-                  </Button>
-                </li>
-              ))}
-              {!revisions?.length && (
-                <li className={"px-4 py-3 text-sm text-nb-gray-400"}>
-                  No revisions found.
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+                  <Trash2 size={14} />
+                </Button>
+              </li>
+            ))}
+            {!revisions?.length && (
+              <li className={"px-4 py-3 text-sm text-nb-gray-400"}>
+                No revisions found.
+              </li>
+            )}
+          </ul>
+        )}
+      </div>
+    </FormModal>
   );
 }

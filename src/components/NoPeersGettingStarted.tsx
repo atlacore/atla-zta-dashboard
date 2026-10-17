@@ -21,7 +21,7 @@ export const NoPeersGettingStarted = ({ showBackground = true }) => {
           size={"large"}
         />
       }
-      title={"Get Started with NetBird"}
+      title={"Get Started with ATLA ZTA"}
       description={
         "It looks like you don't have any connected machines.\n" +
         "Get started by adding one to your network."

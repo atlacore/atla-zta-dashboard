@@ -45,8 +45,11 @@ export default function SWGPage() {
         </Paragraph>
       </div>
 
-      <RestrictedAccess page={"Secure Web Gateway"} hasAccess={permission?.dns?.read}>
-        <div className={"px-default mb-6"}>
+      <RestrictedAccess
+        page={"Secure Web Gateway"}
+        hasAccess={permission?.dns?.read}
+      >
+        <div className={"p-default mb-6"}>
           <SWGPolicyToggle />
         </div>
         <Suspense fallback={<SkeletonTable />}>

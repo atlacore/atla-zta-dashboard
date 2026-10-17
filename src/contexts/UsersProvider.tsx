@@ -76,7 +76,7 @@ export const useLoggedInUser = () => {
 };
 
 export const useUserUpdate = () => {
-  const request = useApiCall<User>("/ui/user");
+  const request = useApiCall<User>("/ui/users");
   return {
     update: (id: string, data: Partial<User>) => request.patch(data, `/${id}`),
   };

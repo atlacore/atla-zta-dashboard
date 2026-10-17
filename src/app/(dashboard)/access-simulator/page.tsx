@@ -8,10 +8,13 @@ import { Input } from "@components/Input";
 import { Label } from "@components/Label";
 import Paragraph from "@components/Paragraph";
 import { SmallBadge } from "@components/ui/SmallBadge";
-import useFetchApi, { useApiCall } from "@utils/api";
-import { CheckCircle2, FlaskConicalIcon, XCircle } from "lucide-react";
+import useFetchApi from "@utils/api";
+import { SignedRequestError } from "@utils/deviceAuth/signedFetch";
+import { useSignedApiCall } from "@/hooks/useSignedApiCall";
+import { AlertCircle, CheckCircle2, CheckIcon, CopyIcon, FlaskConicalIcon, ShieldCheckIcon, XCircle } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { useUsers } from "@/contexts/UsersProvider";
+import { toast } from "sonner";
+import { useLoggedInUser, useUsers } from "@/contexts/UsersProvider";
 import { Resource } from "@/interfaces/Resource";
 import PageContainer from "@/layouts/PageContainer";
 import { buildResourceArn } from "@/utils/arn";
@@ -22,20 +25,65 @@ interface EvaluateResponse {
   decision_token?: string;
   policy?: unknown;
   delivery_preview?: { kind?: string; credProfile?: string };
+  signature?: {
+    alg?: string;
+    kid?: string;
+    value?: string;
+    nonce?: string;
+    public_key?: string;
+    certificate?: string;
+  };
 }
 
 const NO_RESOURCE = "__manual__";
 
+type EvaluateError = {
+  title: string;
+  message: string;
+  /** The server only evaluates access for the signed-in user, so offer to switch to them. */
+  subjectMismatch?: boolean;
+};
+
+function describeEvaluateError(err: unknown): EvaluateError {
+  const message = err instanceof Error ? err.message : "Evaluate failed";
+  if (err instanceof SignedRequestError) {
+    if (err.untrusted) {
+      return {
+        title: "Untrusted response",
+        message: `The response signature did not verify against the pinned CA: ${message}`,
+      };
+    }
+    if (err.code === 403 && /subject mismatch/i.test(message)) {
+      return {
+        title: "Subject mismatch",
+        message:
+          "The server only evaluates access for the account you are signed in with, and the selected subject is a different user.",
+        subjectMismatch: true,
+      };
+    }
+    if (err.code === 401) {
+      return {
+        title: "Not authorized",
+        message: `The request was rejected: ${message}`,
+      };
+    }
+  }
+  return { title: "Evaluation failed", message };
+}
+
 export default function AccessSimulatorPage() {
   const { users } = useUsers();
   const { data: resources } = useFetchApi<Resource[]>("/ui/resources");
-  const evaluateRequest = useApiCall<EvaluateResponse>("/access/evaluate");
+  const evaluateRequest = useSignedApiCall<EvaluateResponse>("/access/evaluate");
 
   const [resourceId, setResourceId] = useState(NO_RESOURCE);
   const [arn, setArn] = useState("");
   const [subject, setSubject] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<EvaluateResponse | null>(null);
+  const [error, setError] = useState<EvaluateError | null>(null);
+  const [copied, setCopied] = useState(false);
+  const { loggedInUser } = useLoggedInUser();
 
   const selectedResource = useMemo(
     () => resources?.find((r) => r.id === resourceId),
@@ -55,13 +103,27 @@ export default function AccessSimulatorPage() {
   const evaluate = () => {
     setIsLoading(true);
     setResult(null);
+    setError(null);
     evaluateRequest
       .post({ arn: effectiveArn.trim(), subject: subject.trim() })
       .then((res) => res && setResult(res))
+      .catch((err) => setError(describeEvaluateError(err)))
       .finally(() => setIsLoading(false));
   };
 
-  const canEvaluate = !!effectiveArn.trim() && !!subject.trim() && !isLoading;
+  const signingReady = evaluateRequest.support === "supported";
+  const copyResponse = () => {
+    if (!result) return;
+    navigator.clipboard
+      .writeText(JSON.stringify(result, null, 2))
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      })
+      .catch(() => toast.error("Could not copy to clipboard"));
+  };
+
+  const canEvaluate = signingReady && !!effectiveArn.trim() && !!subject.trim() && !isLoading;
 
   return (
     <PageContainer>
@@ -86,7 +148,7 @@ export default function AccessSimulatorPage() {
       </div>
 
       <div className={"px-8 pb-8 flex flex-wrap xl:flex-nowrap gap-10 max-w-[1800px]"}>
-        <Card className={"w-full xl:w-[420px] xl:shrink-0 p-6 flex flex-col gap-4"}>
+        <Card className={"w-full xl:w-[420px] xl:shrink-0 xl:self-start p-6 flex flex-col gap-4"}>
           <div>
             <Label>Resource</Label>
             <HelpText>
@@ -145,6 +207,18 @@ export default function AccessSimulatorPage() {
             />
           </div>
 
+          {evaluateRequest.support === "insecure-context" && (
+            <HelpText>Request signing needs HTTPS (or localhost).</HelpText>
+          )}
+          {evaluateRequest.support === "unsupported" && (
+            <HelpText>This browser lacks Ed25519 support, so signed responses cannot be verified.</HelpText>
+          )}
+          {evaluateRequest.deviceId && (
+            <HelpText>
+              Signing as device <code className={"font-mono"}>{evaluateRequest.deviceId}</code>
+            </HelpText>
+          )}
+
           <Button
             variant={"primary"}
             onClick={evaluate}
@@ -157,14 +231,50 @@ export default function AccessSimulatorPage() {
         </Card>
 
         <div className={"w-full xl:flex-1 xl:min-w-0"}>
-          {!result && (
+          {error && (
+            <Card
+              className={
+                "w-full p-6 flex flex-col gap-3 border-red-500/30 bg-red-500/5"
+              }
+            >
+              <div className={"flex items-center gap-2"}>
+                <AlertCircle size={20} className={"text-red-400"} />
+                <span className={"text-lg font-medium"}>{error.title}</span>
+              </div>
+              <p className={"text-sm text-nb-gray-300"}>{error.message}</p>
+              {error.subjectMismatch && loggedInUser && (
+                <div>
+                  <Button
+                    variant={"secondary"}
+                    onClick={() => {
+                      setSubject(loggedInUser.id);
+                      setError(null);
+                    }}
+                  >
+                    Use my account
+                  </Button>
+                </div>
+              )}
+            </Card>
+          )}
+          {!result && !error && (
             <Card className={"w-full p-6 text-sm text-nb-gray-400"}>
               Fill in a resource (or ARN) and a subject, then Evaluate to see
               the PDP decision here.
             </Card>
           )}
           {result && (
-            <Card className={"w-full p-6 flex flex-col gap-4"}>
+            <Card className={"relative w-full p-6 flex flex-col gap-4"}>
+              <button
+                type={"button"}
+                onClick={copyResponse}
+                title={"Copy response JSON"}
+                className={
+                  "absolute top-4 right-4 p-2 rounded-md text-nb-gray-300 hover:text-white hover:bg-nb-gray-900/60 transition-colors"
+                }
+              >
+                {copied ? <CheckIcon size={14} /> : <CopyIcon size={14} />}
+              </button>
               <div className={"flex items-center gap-2"}>
                 {result.allow ? (
                   <CheckCircle2 size={20} className={"text-emerald-400"} />
@@ -210,18 +320,35 @@ export default function AccessSimulatorPage() {
                 </div>
               )}
 
-              {result.policy !== undefined && result.policy !== null && (
+              {result.signature && (
                 <div>
-                  <Label>Raw decision</Label>
-                  <pre
-                    className={
-                      "font-mono text-xs bg-nb-gray-900/40 rounded-md p-3 overflow-x-auto"
-                    }
-                  >
-                    {JSON.stringify(result.policy, null, 2)}
-                  </pre>
+                  <Label>Response signature</Label>
+                  <div className={"flex flex-wrap items-center gap-2 mt-1"}>
+                    <SmallBadge text={"verified against pinned CA"} variant={"green"} size={"md"} />
+                    {result.signature.alg && (
+                      <SmallBadge text={result.signature.alg} variant={"blue"} size={"md"} />
+                    )}
+                    {result.signature.kid && (
+                      <SmallBadge text={`kid: ${result.signature.kid}`} variant={"sky"} size={"md"} />
+                    )}
+                  </div>
+                  <p className={"font-mono text-xs text-nb-gray-400 break-all mt-2"}>
+                    <ShieldCheckIcon size={12} className={"inline mr-1"} />
+                    {result.signature.value}
+                  </p>
                 </div>
               )}
+
+              <div>
+                <Label>Raw response</Label>
+                <pre
+                  className={
+                    "font-mono text-xs bg-nb-gray-900/40 rounded-md p-3 overflow-x-auto"
+                  }
+                >
+                  {JSON.stringify(result, null, 2)}
+                </pre>
+              </div>
             </Card>
           )}
         </div>

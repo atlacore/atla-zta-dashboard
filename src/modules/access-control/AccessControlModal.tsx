@@ -308,7 +308,7 @@ export function AccessControlModalContent({
                         side={"right"}
                         content={
                           <>
-                            Select NetBird SSH for SSH-specific policies with
+                            Select ATLA SSH for SSH-specific policies with
                             fine-grained access control, or use TCP with port 22
                             for basic network-level SSH access
                           </>
@@ -316,7 +316,7 @@ export function AccessControlModalContent({
                       />
                     }
                   >
-                    NetBird SSH
+                    ATLA SSH
                   </SelectItem>
                 </SelectContent>
               </Select>

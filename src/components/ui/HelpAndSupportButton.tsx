@@ -22,7 +22,10 @@ import { useState } from "react";
 import Button from "@components/Button";
 import { cn } from "@utils/helpers";
 import SlackIcon from "@/assets/icons/SlackIcon";
+import loadConfig from "@utils/config";
 import { isNetBirdHosted } from "@utils/netbird";
+
+const config = loadConfig();
 
 export default function HelpAndSupportButton() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -55,7 +58,7 @@ export default function HelpAndSupportButton() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          href="https://docs.netbird.io/"
+          href={config.docsUrl}
           target="_blank"
           rel="noopener noreferrer"
           asChild

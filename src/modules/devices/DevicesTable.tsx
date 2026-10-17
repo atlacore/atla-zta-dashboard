@@ -6,6 +6,7 @@ import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
 import Button from "@components/Button";
+import { InstallClientButton } from "@components/ui/InstallClientButton";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
@@ -25,7 +26,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function DevicesTable({ devices, isLoading, headingTarget }: Readonly<Props>) {
+export default function DevicesTable({
+  devices,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
@@ -129,6 +134,7 @@ export default function DevicesTable({ devices, isLoading, headingTarget }: Read
                 variant={"danger-outline"}
                 className={"!px-3"}
                 onClick={() => revoke(row.original)}
+                tooltip={"Revoke device"}
               >
                 <Trash2 size={14} />
               </Button>
@@ -150,6 +156,7 @@ export default function DevicesTable({ devices, isLoading, headingTarget }: Read
       columns={columns}
       data={devices ?? []}
       searchPlaceholder={"Search by device ID..."}
+      rightSide={() => <InstallClientButton />}
     >
       {(table) => (
         <>

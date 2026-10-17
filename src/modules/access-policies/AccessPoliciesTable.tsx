@@ -6,13 +6,7 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -53,7 +47,11 @@ type CreateModalProps = {
   onCreated: () => void;
 };
 
-function CreateAccessPolicyModal({ open, onOpenChange, onCreated }: CreateModalProps) {
+function CreateAccessPolicyModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateModalProps) {
   const [name, setName] = useState("");
   const [rulesJson, setRulesJson] = useState(
     JSON.stringify(DEFAULT_RULES, null, 2),
@@ -92,54 +90,61 @@ function CreateAccessPolicyModal({ open, onOpenChange, onCreated }: CreateModalP
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-xl"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <ShieldCheck size={16} />
-              Create Access Policy
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={"e.g. dev-ssh-access"}
-            />
-          </div>
-          <div>
-            <Label>Rules (JSON)</Label>
-            <HelpText>
-              Each rule specifies users (UUIDs), resources (ARNs), action, protocol, and ports.
-              Use <code className={"font-mono text-xs"}>[]</code> for ports to allow all.
-            </HelpText>
-            <textarea
-              className={
-                "w-full bg-nb-gray-900/30 border border-nb-gray-900 rounded-md px-3 py-2 font-mono text-xs text-nb-gray-100 resize-y min-h-[160px] focus:outline-none"
-              }
-              value={rulesJson}
-              onChange={(e) => setRulesJson(e.target.value)}
-            />
-            {jsonError && (
-              <p className={"text-xs text-red-400 mt-1"}>{jsonError}</p>
-            )}
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleCreate} disabled={!name.trim()}>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      maxWidthClass={"max-w-xl"}
+      icon={<ShieldCheck size={20} />}
+      title={"Create Access Policy"}
+      description={"Grant users access to resources and networks."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant={"primary"}
+            onClick={handleCreate}
+            disabled={!name.trim()}
+          >
             <PlusCircle size={16} />
             Create
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={"e.g. dev-ssh-access"}
+          />
+        </div>
+        <div>
+          <Label>Rules (JSON)</Label>
+          <HelpText>
+            Each rule specifies users (UUIDs), resources (ARNs), action,
+            protocol, and ports. Use{" "}
+            <code className={"font-mono text-xs"}>[]</code> for ports to allow
+            all.
+          </HelpText>
+          <textarea
+            className={
+              "w-full bg-nb-gray-900/30 border border-nb-gray-900 rounded-md px-3 py-2 font-mono text-xs text-nb-gray-100 resize-y min-h-[160px] focus:outline-none"
+            }
+            value={rulesJson}
+            onChange={(e) => setRulesJson(e.target.value)}
+          />
+          {jsonError && (
+            <p className={"text-xs text-red-400 mt-1"}>{jsonError}</p>
+          )}
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -152,10 +157,17 @@ type EditModalProps = {
   onSaved: () => void;
 };
 
-function EditAccessPolicyModal({ policy, open, onOpenChange, onSaved }: EditModalProps) {
+function EditAccessPolicyModal({
+  policy,
+  open,
+  onOpenChange,
+  onSaved,
+}: EditModalProps) {
   const [name, setName] = useState(policy.name);
   const [description, setDescription] = useState(policy.description ?? "");
-  const policyRequest = useApiCall<AccessPolicy>(`/ui/access-policies/${policy.id}`);
+  const policyRequest = useApiCall<AccessPolicy>(
+    `/ui/access-policies/${policy.id}`,
+  );
 
   const handleSave = () => {
     const body: AccessPolicyUpdateRequest = {};
@@ -175,36 +187,38 @@ function EditAccessPolicyModal({ policy, open, onOpenChange, onSaved }: EditModa
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <PenSquare size={16} />
-              Edit Access Policy
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={"Optional"}
-            />
-          </div>
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={<PenSquare size={20} />}
+      title={"Edit Access Policy"}
+      description={"Change the policy's name or description."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant={"primary"} onClick={handleSave}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleSave}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div>
+          <Label>Description</Label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={"Optional"}
+          />
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -245,9 +259,9 @@ export default function AccessPoliciesTable({
     });
     if (!choice) return;
 
-    const promise = policyRequest.del(undefined, `/${policy.id}`).then(() =>
-      mutate("/ui/access-policies"),
-    );
+    const promise = policyRequest
+      .del(undefined, `/${policy.id}`)
+      .then(() => mutate("/ui/access-policies"));
     notify({
       title: "Delete Access Policy",
       description: `Policy '${policy.name}' deleted.`,
@@ -269,7 +283,9 @@ export default function AccessPoliciesTable({
           <div>
             <p className={"font-medium text-sm"}>{row.original.name}</p>
             {row.original.description && (
-              <p className={"text-xs text-nb-gray-400"}>{row.original.description}</p>
+              <p className={"text-xs text-nb-gray-400"}>
+                {row.original.description}
+              </p>
             )}
           </div>
         </div>
@@ -308,6 +324,7 @@ export default function AccessPoliciesTable({
             variant={"default-outline"}
             size={"sm"}
             onClick={() => setEditPolicy(row.original)}
+            tooltip={"Edit"}
           >
             <PenSquare size={14} />
           </Button>
@@ -315,6 +332,7 @@ export default function AccessPoliciesTable({
             variant={"danger-outline"}
             size={"sm"}
             onClick={() => deletePolicy(row.original)}
+            tooltip={"Delete"}
             disabled={!permission.policies?.delete}
           >
             <Trash2 size={14} />
@@ -335,7 +353,9 @@ export default function AccessPoliciesTable({
         <EditAccessPolicyModal
           policy={editPolicy}
           open={true}
-          onOpenChange={(v) => { if (!v) setEditPolicy(null); }}
+          onOpenChange={(v) => {
+            if (!v) setEditPolicy(null);
+          }}
           onSaved={() => mutate("/ui/access-policies")}
         />
       )}

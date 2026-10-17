@@ -5,7 +5,7 @@ import { CheckCircle2, Loader2 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { ApiError, SetupRequest } from "@/interfaces/Instance";
 import { submitSetup } from "@/utils/unauthenticatedApi";
-import { NetBirdLogo } from "@components/NetBirdLogo";
+import { AtlaLogo } from "@components/AtlaLogo";
 import Button from "@components/Button";
 import { Label } from "@components/Label";
 import { Input } from "@components/Input";
@@ -137,7 +137,7 @@ export default function InstanceSetupWizard() {
     return (
       <div className="mt-20">
         <div className={"flex items-center justify-center"}>
-          <NetBirdLogo size={"large"} mobile={false} />
+          <AtlaLogo size={"large"} mobile={false} />
         </div>
         <Card className={"max-w-[360px] mt-8 mx-auto"}>
           <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mb-4 mx-auto">
@@ -172,11 +172,11 @@ export default function InstanceSetupWizard() {
   return (
     <div className="mt-20">
       <div className={"flex items-center justify-center"}>
-        <NetBirdLogo size={"large"} mobile={false} />
+        <AtlaLogo size={"large"} mobile={false} />
       </div>
       <Card className={"max-w-[420px] mt-8 mx-auto"}>
         <h1 className={"text-xl text-center z-10 relative"}>
-          Welcome to NetBird
+          Welcome to ATLA ZTA
         </h1>
         <div
           className={
@@ -257,7 +257,7 @@ export default function InstanceSetupWizard() {
         <span
           className={"text-sm text-nb-gray-400 font-light pb-10 text-center"}
         >
-          This is a one-time setup for your NetBird instance.
+          This is a one-time setup for your ATLA ZTA instance.
         </span>
       </div>
     </div>

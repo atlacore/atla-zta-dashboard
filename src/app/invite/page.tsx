@@ -17,11 +17,13 @@ function InviteAcceptForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "";
   const tenantId = searchParams.get("tenantId") || "";
+  // The invite is issued for one identifier; links carry it so the user cannot mistype it.
+  const invitedExtSub = searchParams.get("extSub") || "";
 
   const extSubId = useId();
   const errorId = useId();
 
-  const [extSub, setExtSub] = useState("");
+  const [extSub, setExtSub] = useState(invitedExtSub);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -113,11 +115,22 @@ function InviteAcceptForm() {
                     required
                     value={extSub}
                     onChange={(e) => setExtSub(e.target.value)}
+                    readOnly={!!invitedExtSub}
                     placeholder="you@company.com"
                     aria-invalid={!!error}
                     aria-describedby={error ? errorId : undefined}
-                    className={cn(inputBase, "px-4", error ? inputError : inputNormal)}
+                    className={cn(
+                      inputBase,
+                      "px-4",
+                      error ? inputError : inputNormal,
+                      invitedExtSub && "cursor-not-allowed text-nb-gray-400",
+                    )}
                   />
+                  {invitedExtSub && (
+                    <p className="mt-1.5 text-[12px] text-nb-gray-500">
+                      This invite was issued for this identifier
+                    </p>
+                  )}
                 </div>
 
                 {error && (

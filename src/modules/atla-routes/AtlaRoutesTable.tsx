@@ -1,15 +1,10 @@
 "use client";
 
 import Button from "@components/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import CheckboxField from "@components/CheckboxField";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
+import FormModal from "@components/modal/FormModal";
 import { notify } from "@components/Notification";
 import {
   Select,
@@ -18,11 +13,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@components/Select";
+import { DataTable } from "@components/table/DataTable";
+import DataTableHeader from "@components/table/DataTableHeader";
+import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
+import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
+import { ColumnDef, SortingState } from "@tanstack/react-table";
 import useFetchApi, { useApiCall } from "@utils/api";
-import { PenSquare, PlusCircle, RouteIcon, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import {
+  CheckCircle2,
+  PenSquare,
+  PlusCircle,
+  RouteIcon,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { usePathname } from "next/navigation";
+import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
   AtlaNetwork,
   AtlaNetworkRoute,
@@ -52,7 +61,9 @@ function AtlaRouteEditor({ route, open, onOpenChange, onSaved }: EditorProps) {
   const [isActive, setIsActive] = useState<boolean>(route?.isActive ?? false);
 
   const createCall = useApiCall<AtlaNetworkRoute>("/ui/routes");
-  const updateCall = useApiCall<AtlaNetworkRoute>(`/ui/routes/${route?.id ?? ""}`);
+  const updateCall = useApiCall<AtlaNetworkRoute>(
+    `/ui/routes/${route?.id ?? ""}`,
+  );
 
   const close = () => {
     if (!isEdit) {
@@ -104,100 +115,18 @@ function AtlaRouteEditor({ route, open, onOpenChange, onSaved }: EditorProps) {
   const isValid = (isEdit || hasNetworks) && networkId && cidr.trim();
 
   return (
-    <Dialog open={open} onOpenChange={(v) => (v ? onOpenChange(true) : close())}>
-      <DialogContent className={"max-w-lg"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <RouteIcon size={16} />
-              {isEdit ? "Edit Route" : "Create Route"}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          {!hasNetworks && !isEdit && (
-            <div
-              className={
-                "rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
-              }
-            >
-              You need to create a{" "}
-              <a className={"underline"} href={"/atla-networks"}>
-                network
-              </a>{" "}
-              before you can add routes to it.
-            </div>
-          )}
-          <div>
-            <Label>Network</Label>
-            <Select
-              value={networkId}
-              onValueChange={setNetworkId}
-              disabled={isEdit || !hasNetworks}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    hasNetworks ? "Select network" : "No networks available"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {(networks ?? []).map((n) => (
-                  <SelectItem key={n.id} value={n.id}>
-                    {n.name} ({n.cidr})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Destination CIDR</Label>
-            <Input
-              value={cidr}
-              onChange={(e) => setCidr(e.target.value)}
-              placeholder={"10.0.0.0/24"}
-            />
-          </div>
-          <div>
-            <Label>Via (gateway, optional)</Label>
-            <Input
-              value={via}
-              onChange={(e) => setVia(e.target.value)}
-              placeholder={"10.0.0.1"}
-            />
-          </div>
-          <div>
-            <Label>Metric</Label>
-            <Input
-              value={metric}
-              onChange={(e) => setMetric(e.target.value)}
-              placeholder={"100"}
-            />
-          </div>
-          <div>
-            <Label>Description</Label>
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={"Optional"}
-            />
-          </div>
-          {isEdit && (
-            <div className={"flex items-center gap-2"}>
-              <input
-                id={"atla-route-active"}
-                type={"checkbox"}
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <Label htmlFor={"atla-route-active"}>Active</Label>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => (v ? onOpenChange(true) : close())}
+      icon={<RouteIcon size={20} />}
+      title={isEdit ? "Edit Route" : "Create Route"}
+      description={
+        isEdit
+          ? "Change the route's destination, gateway or state."
+          : "Add a routing rule to a network."
+      }
+      footer={
+        <>
           <Button variant={"secondary"} onClick={close}>
             Cancel
           </Button>
@@ -205,9 +134,87 @@ function AtlaRouteEditor({ route, open, onOpenChange, onSaved }: EditorProps) {
             <PlusCircle size={16} />
             {isEdit ? "Save" : "Create"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        {!hasNetworks && !isEdit && (
+          <div
+            className={
+              "rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200"
+            }
+          >
+            You need to create a{" "}
+            <a className={"underline"} href={"/atla-networks"}>
+              network
+            </a>{" "}
+            before you can add routes to it.
+          </div>
+        )}
+        <div>
+          <Label>Network</Label>
+          <Select
+            value={networkId}
+            onValueChange={setNetworkId}
+            disabled={isEdit || !hasNetworks}
+          >
+            <SelectTrigger>
+              <SelectValue
+                placeholder={
+                  hasNetworks ? "Select network" : "No networks available"
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {(networks ?? []).map((n) => (
+                <SelectItem key={n.id} value={n.id}>
+                  {n.name} ({n.cidr})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label>Destination CIDR</Label>
+          <Input
+            value={cidr}
+            onChange={(e) => setCidr(e.target.value)}
+            placeholder={"10.0.0.0/24"}
+          />
+        </div>
+        <div>
+          <Label>Via (gateway, optional)</Label>
+          <Input
+            value={via}
+            onChange={(e) => setVia(e.target.value)}
+            placeholder={"10.0.0.1"}
+          />
+        </div>
+        <div>
+          <Label>Metric</Label>
+          <Input
+            value={metric}
+            onChange={(e) => setMetric(e.target.value)}
+            placeholder={"100"}
+          />
+        </div>
+        <div>
+          <Label>Description</Label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={"Optional"}
+          />
+        </div>
+        {isEdit && (
+          <CheckboxField
+            label={"Active"}
+            checked={isActive}
+            onChange={setIsActive}
+          />
+        )}
+      </div>
+    </FormModal>
   );
 }
 
@@ -253,90 +260,157 @@ export default function AtlaRoutesTable({
 
   const refresh = () => mutate("/ui/routes");
 
-  return (
-    <div className={"p-default pb-8"}>
-      <div className={"flex items-center justify-between mb-3 gap-3"}>
-        {!hasNetworks && (
-          <p className={"text-xs text-amber-300"}>
-            Create a{" "}
-            <a className={"underline"} href={"/atla-networks"}>
-              network
-            </a>{" "}
-            first — a route must belong to one.
-          </p>
-        )}
-        <Button
-          variant={"primary"}
-          onClick={() => setCreateOpen(true)}
-          disabled={!hasNetworks}
-          className={"ml-auto"}
-        >
-          <PlusCircle size={16} />
-          Add Route
-        </Button>
-      </div>
+  const path = usePathname();
+  const [sorting, setSorting] = useLocalStorage<SortingState>(
+    "netbird-table-sort" + path,
+    [{ id: "network", desc: false }],
+  );
 
-      <div className={"border border-nb-gray-900 rounded-md overflow-hidden"}>
-        <table className={"w-full text-sm"}>
-          <thead className={"bg-nb-gray-940 text-nb-gray-300"}>
-            <tr>
-              <th className={"text-left px-3 py-2"}>Network</th>
-              <th className={"text-left px-3 py-2"}>CIDR</th>
-              <th className={"text-left px-3 py-2"}>Via</th>
-              <th className={"text-left px-3 py-2"}>Metric</th>
-              <th className={"text-left px-3 py-2"}>Active</th>
-              <th className={"px-3 py-2"} />
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && (
-              <tr>
-                <td className={"px-3 py-2 text-nb-gray-300"} colSpan={6}>
-                  Loading…
-                </td>
-              </tr>
-            )}
-            {!isLoading && (data ?? []).length === 0 && (
-              <tr>
-                <td className={"px-3 py-2 text-nb-gray-300"} colSpan={6}>
-                  No routes yet.
-                </td>
-              </tr>
-            )}
-            {(data ?? []).map((r) => (
-              <tr key={r.id} className={"border-t border-nb-gray-900"}>
-                <td className={"px-3 py-2 font-medium text-nb-gray-100"}>
-                  {networkName(r.networkId)}
-                </td>
-                <td className={"px-3 py-2 font-mono"}>{r.cidr}</td>
-                <td className={"px-3 py-2 font-mono text-nb-gray-300"}>
-                  {r.via ?? <span className={"text-nb-gray-500"}>—</span>}
-                </td>
-                <td className={"px-3 py-2"}>{r.metric}</td>
-                <td className={"px-3 py-2"}>{r.isActive ? "yes" : "no"}</td>
-                <td className={"px-3 py-2"}>
-                  <div className={"flex items-center gap-1 justify-end"}>
-                    <button
-                      onClick={() => setEditing(r)}
-                      className={"text-nb-gray-300 hover:text-white p-1"}
-                      title={"Edit"}
-                    >
-                      <PenSquare size={14} />
-                    </button>
-                    <button
-                      onClick={() => onDelete(r)}
-                      className={"text-nb-gray-300 hover:text-red-400 p-1"}
-                      title={"Delete"}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  const columns: ColumnDef<AtlaNetworkRoute>[] = useMemo(
+    () => [
+      {
+        id: "network",
+        accessorFn: (r) => networkName(r.networkId),
+        header: ({ column }) => (
+          <DataTableHeader column={column}>Network</DataTableHeader>
+        ),
+        sortingFn: "text",
+        cell: ({ row }) => (
+          <div className={"flex items-center gap-2 px-2 py-1"}>
+            <RouteIcon size={14} className={"text-nb-gray-400 shrink-0"} />
+            <span className={"text-sm font-medium"}>
+              {networkName(row.original.networkId)}
+            </span>
+          </div>
+        ),
+      },
+      {
+        accessorKey: "cidr",
+        header: ({ column }) => (
+          <DataTableHeader column={column}>CIDR</DataTableHeader>
+        ),
+        sortingFn: "text",
+        cell: ({ row }) => (
+          <span className={"font-mono text-sm"}>{row.original.cidr}</span>
+        ),
+      },
+      {
+        accessorKey: "via",
+        header: ({ column }) => (
+          <DataTableHeader column={column}>Via</DataTableHeader>
+        ),
+        sortingFn: "text",
+        cell: ({ row }) =>
+          row.original.via ? (
+            <span className={"font-mono text-sm text-nb-gray-300"}>
+              {row.original.via}
+            </span>
+          ) : (
+            <span className={"text-sm text-nb-gray-500"}>—</span>
+          ),
+      },
+      {
+        accessorKey: "metric",
+        header: ({ column }) => (
+          <DataTableHeader column={column}>Metric</DataTableHeader>
+        ),
+        cell: ({ row }) => (
+          <span className={"text-sm text-nb-gray-300"}>
+            {row.original.metric}
+          </span>
+        ),
+      },
+      {
+        accessorKey: "isActive",
+        header: ({ column }) => (
+          <DataTableHeader column={column}>Active</DataTableHeader>
+        ),
+        cell: ({ row }) =>
+          row.original.isActive ? (
+            <CheckCircle2
+              size={18}
+              className={"text-green-500"}
+              aria-label={"Active"}
+            />
+          ) : (
+            <XCircle
+              size={18}
+              className={"text-nb-gray-500"}
+              aria-label={"Inactive"}
+            />
+          ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <div className={"flex items-center justify-end gap-2 pr-4"}>
+            <Button
+              variant={"secondary"}
+              className={"!px-3"}
+              onClick={() => setEditing(row.original)}
+              tooltip={"Edit"}
+            >
+              <PenSquare size={14} />
+            </Button>
+            <Button
+              variant={"danger-outline"}
+              className={"!px-3"}
+              onClick={() => onDelete(row.original)}
+              tooltip={"Delete"}
+            >
+              <Trash2 size={14} />
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [networks],
+  );
+
+  return (
+    <>
+      {!hasNetworks && (
+        <p className={"p-default pb-3 text-xs text-amber-300"}>
+          Create a{" "}
+          <a className={"underline"} href={"/atla-networks"}>
+            network
+          </a>{" "}
+          first — a route must belong to one.
+        </p>
+      )}
+
+      <DataTable
+        isLoading={isLoading}
+        text={"Routes"}
+        sorting={sorting}
+        setSorting={setSorting}
+        columns={columns}
+        data={data ?? []}
+        searchPlaceholder={"Search by network, CIDR or gateway..."}
+        rightSide={() => (
+          <Button
+            variant={"primary"}
+            onClick={() => setCreateOpen(true)}
+            disabled={!hasNetworks}
+            className={"ml-auto"}
+          >
+            <PlusCircle size={16} />
+            Add Route
+          </Button>
+        )}
+      >
+        {(table) => (
+          <>
+            <DataTableRowsPerPage table={table} disabled={!data?.length} />
+            <DataTableRefreshButton
+              isDisabled={!data?.length}
+              onClick={refresh}
+            />
+          </>
+        )}
+      </DataTable>
 
       <AtlaRouteEditor
         open={createOpen}
@@ -351,6 +425,6 @@ export default function AtlaRoutesTable({
           onSaved={refresh}
         />
       )}
-    </div>
+    </>
   );
 }

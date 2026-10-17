@@ -13,7 +13,7 @@ import {
 } from "@/contexts/ReverseProxiesProvider";
 import { HelpTooltip } from "@components/HelpTooltip";
 import InlineLink, { InlineButtonLink } from "@components/InlineLink";
-import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import SetupModal from "@/modules/setup-client-modal/SetupModal";
 
 export type Target = {
   type: ReverseProxyTargetType;
@@ -49,12 +49,12 @@ export default function ReverseProxyTargetSelector({
               content={
                 <>
                   A <span className={"text-white font-medium"}>peer</span> is a
-                  machine (e.g., laptop, server, container) running NetBird.
+                  machine (e.g., laptop, server, container) running the ATLA client.
                   Select a peer if your service runs directly on it.
                   <span className={"mt-1 block"}>
                     If you don&apos;t have a peer yet, you can{" "}
                     <InlineButtonLink onClick={() => setInstallModal(true)}>
-                      Install NetBird
+                      Install ATLA client
                     </InlineButtonLink>
                     .
                   </span>
@@ -71,7 +71,7 @@ export default function ReverseProxyTargetSelector({
                 <>
                   A <span className={"text-white font-medium"}>resource</span>{" "}
                   is a destination (IP, subnet, or domain) that can&apos;t run
-                  NetBird directly. Resources are part of a network and are
+                  the ATLA client directly. Resources are part of a network and are
                   reached through a routing peer that forwards traffic to them.
                   <span className={"mt-1 block"}>
                     If you don&apos;t have resources yet, go to{" "}

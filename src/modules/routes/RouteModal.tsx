@@ -741,7 +741,7 @@ export function RouteModalContent({
                   </>
                 }
                 helpText={
-                  "Automatically apply this exit node to your distribution groups. This requires NetBird client v0.55.0 or higher."
+                  "Automatically apply this exit node to your distribution groups. This requires a compatible ATLA client."
                 }
               />
             )}

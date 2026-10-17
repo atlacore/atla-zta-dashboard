@@ -1,12 +1,16 @@
 [
   {
     "tag": "New",
-    "text": "NetBird Reverse Proxy - Expose internal services to the public with automatic TLS and optional authentication.",
-    "link": "https://docs.netbird.io/manage/reverse-proxy",
-    "linkText": "Learn more",
+    "text": "ATLA Zero Trust - a distributed system for building secure networks for your business.",
     "variant": "important",
-    "isExternal": true,
-    "closeable": true,
-    "isCloudOnly": false
+    "isExternal": false,
+    "closeable": true
+  },
+  {
+    "tag": "Beta",
+    "text": "ATLA is in beta testing - the service is free to use for the whole beta period.",
+    "variant": "default",
+    "isExternal": false,
+    "closeable": false
   }
 ]

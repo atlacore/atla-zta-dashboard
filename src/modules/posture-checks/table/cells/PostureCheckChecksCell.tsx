@@ -1,7 +1,7 @@
 import { cn } from "@utils/helpers";
 import { Disc3Icon, FlagIcon, NetworkIcon, ServerCogIcon } from "lucide-react";
 import * as React from "react";
-import NetBirdIcon from "@/assets/icons/NetBirdIcon";
+import AtlaIcon from "@/assets/icons/AtlaIcon";
 import { PostureCheck } from "@/interfaces/PostureCheck";
 import { GeoLocationTooltip } from "@/modules/posture-checks/checks/tooltips/GeoLocationTooltip";
 import { NetBirdVersionTooltip } from "@/modules/posture-checks/checks/tooltips/NetBirdVersionTooltip";
@@ -42,7 +42,7 @@ export const PostureCheckChecksCell = ({
                   "bg-gradient-to-tr from-netbird-200 to-netbird-100 h-8 w-8 rounded-full flex items-center justify-center relative z-[10] hover:scale-[1.1] transition-all",
                 )}
               >
-                <NetBirdIcon size={14} />
+                <AtlaIcon size={14} />
               </div>
             </NetBirdVersionTooltip>
           )}

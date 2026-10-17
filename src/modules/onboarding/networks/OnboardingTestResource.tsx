@@ -9,7 +9,7 @@ import * as React from "react";
 import { useMemo, useState } from "react";
 import { NetworkResource } from "@/interfaces/Network";
 import { Peer } from "@/interfaces/Peer";
-import { SetupModalContent } from "@/modules/setup-netbird-modal/SetupModal";
+import { SetupModalContent } from "@/modules/setup-client-modal/SetupModal";
 
 type Props = {
   resource?: NetworkResource;
@@ -94,7 +94,7 @@ export const OnboardingTestResource = ({
 
       <Modal open={open} onOpenChange={setOpen}>
         <ModalContent>
-          <SetupModalContent title={"Install NetBird"} />
+          <SetupModalContent title={"Install ATLA client"} />
         </ModalContent>
       </Modal>
     </div>

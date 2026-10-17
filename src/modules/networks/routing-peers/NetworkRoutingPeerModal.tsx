@@ -44,7 +44,7 @@ import { Peer } from "@/interfaces/Peer";
 import { SetupKey } from "@/interfaces/SetupKey";
 import useGroupHelper from "@/modules/groups/useGroupHelper";
 import { RoutingPeerMasqueradeSwitch } from "@/modules/networks/routing-peers/RoutingPeerMasqueradeSwitch";
-import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import SetupModal from "@/modules/setup-client-modal/SetupModal";
 
 type Props = {
   network: Network;
@@ -283,7 +283,7 @@ function RoutingPeerModalContent({
               <div>
                 <Label>{"Don't have a routing peer?"}</Label>
                 <HelpText className={""}>
-                  You can install NetBird with a setup key on one or more
+                  You can install the ATLA client with a setup key on one or more
                   machines to act as routing peers.
                 </HelpText>
               </div>
@@ -423,7 +423,7 @@ const InstallNetBirdWithSetupKeyButton = ({
     const choice = await confirm({
       title: `Create a Setup Key?`,
       description:
-        "If you continue, a one-off setup key will be automatically created and you will be able to install NetBird.",
+        "If you continue, a one-off setup key will be automatically created and you will be able to install the ATLA client.",
       confirmText: "Continue",
       cancelText: "Cancel",
       type: "default",
@@ -468,7 +468,7 @@ const InstallNetBirdWithSetupKeyButton = ({
         ) : (
           <DownloadIcon size={14} />
         )}
-        Install NetBird
+        Install ATLA client
       </Button>
       {setupKey && (
         <Modal
@@ -476,11 +476,7 @@ const InstallNetBirdWithSetupKeyButton = ({
           onOpenChange={setInstallModal}
           key={setupKey.key}
         >
-          <SetupModal
-            showClose={true}
-            setupKey={setupKey.key}
-            showOnlyRoutingPeerOS={true}
-          />
+          <SetupModal showClose={true} />
         </Modal>
       )}
     </>

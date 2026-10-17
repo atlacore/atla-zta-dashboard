@@ -1,4 +1,4 @@
-import { cn, generateColorFromString } from "@utils/helpers";
+import { cn, generateColorFromString, isSystemUser } from "@utils/helpers";
 import { Cog } from "lucide-react";
 import * as React from "react";
 
@@ -26,12 +26,12 @@ export const SmallUserAvatar = ({
       )}
       style={{
         color:
-          email === "NetBird"
+          isSystemUser({ id, name, email })
             ? "#808080"
             : generateColorFromString(name || id || "System User"),
       }}
     >
-      {email === "NetBird" ? (
+      {isSystemUser({ id, name, email }) ? (
         <Cog size={14} />
       ) : (
         name?.charAt(0) || id?.charAt(0)

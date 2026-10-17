@@ -7,6 +7,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// The "system" actor is the absence of a user (e.g. an event with no initiator): no id, name or email.
+export function isSystemUser(user?: {
+  id?: string;
+  name?: string;
+  email?: string;
+}): boolean {
+  return !user?.id && !user?.name && !user?.email;
+}
+
 export function randomString(min: number = 12, max: number = 24) {
   let text = "";
   const charset = "ab cd efghi jklmnopqrst uvwxyz01234567 89";
@@ -46,7 +55,7 @@ export const generateColorFromUser = (user?: {
   name?: string;
   email?: string;
 }) => {
-  if (user?.email === "NetBird") return "#9c9c9c";
+  if (isSystemUser(user)) return "#9c9c9c";
   return user?.name
     ? chroma(generateColorFromString(user?.name || user?.id || "System User"))
         .saturate(2)

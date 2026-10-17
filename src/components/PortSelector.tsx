@@ -322,7 +322,7 @@ export function PortSelector({
       </Popover>
       {portRanges?.length > 0 && (
         <Callout variant={"info"} className={"mt-4"}>
-          Port ranges requires NetBird client{" "}
+          Port ranges requires ATLA client{" "}
           <span className={"text-white font-normal"}>v0.48</span> or higher.
         </Callout>
       )}

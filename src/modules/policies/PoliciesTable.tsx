@@ -1,13 +1,7 @@
 "use client";
 
 import Button from "@components/Button";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import HelpText from "@components/HelpText";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
@@ -19,8 +13,15 @@ import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { Textarea } from "@components/Textarea";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
+import { applyIndentKey } from "@utils/indent";
 import dayjs from "dayjs";
-import { FileCode, HistoryIcon, PenSquare, PlusCircle, Trash2 } from "lucide-react";
+import {
+  FileCode,
+  HistoryIcon,
+  PenSquare,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
@@ -49,7 +50,12 @@ type EditorModalProps = {
   onSaved: () => void;
 };
 
-function PolicyEditorModal({ policy, open, onOpenChange, onSaved }: EditorModalProps) {
+function PolicyEditorModal({
+  policy,
+  open,
+  onOpenChange,
+  onSaved,
+}: EditorModalProps) {
   const isEdit = !!policy;
   const [name, setName] = useState(policy?.name ?? "");
   const [body, setBody] = useState(policy?.body ?? DEFAULT_BODY);
@@ -59,6 +65,25 @@ function PolicyEditorModal({ policy, open, onOpenChange, onSaved }: EditorModalP
     setName(policy?.name ?? "");
     setBody(policy?.body ?? DEFAULT_BODY);
     onOpenChange(false);
+  };
+
+  // Tab / Shift+Tab indent and Enter keeps the indentation, like a code editor.
+  const handleBodyKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const field = e.currentTarget;
+    const next = applyIndentKey(
+      {
+        value: field.value,
+        selectionStart: field.selectionStart,
+        selectionEnd: field.selectionEnd,
+      },
+      { key: e.key, shiftKey: e.shiftKey },
+    );
+    if (!next) return;
+    e.preventDefault();
+    setBody(next.value);
+    requestAnimationFrame(() =>
+      field.setSelectionRange(next.selectionStart, next.selectionEnd),
+    );
   };
 
   const handleSave = () => {
@@ -78,44 +103,19 @@ function PolicyEditorModal({ policy, open, onOpenChange, onSaved }: EditorModalP
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className={"max-w-2xl"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <FileCode size={16} />
-              {isEdit ? `Edit '${policy.name}'` : "Create Policy"}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Name</Label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={"e.g. tenant-overrides"}
-              disabled={isEdit}
-            />
-          </div>
-          <div>
-            <Label>Rego body</Label>
-            <HelpText>
-              Saved as a new revision if the content changed (identical content
-              is a no-op). Validated server-side before it is persisted.
-            </HelpText>
-            <Textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              className={"font-mono text-xs min-h-[280px]"}
-              rows={16}
-              spellCheck={false}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => !v && handleClose()}
+      maxWidthClass={"max-w-2xl"}
+      icon={<FileCode size={20} />}
+      title={isEdit ? `Edit '${policy.name}'` : "Create Policy"}
+      description={
+        isEdit
+          ? "Saving changed content creates a new revision."
+          : "Write a Rego policy for this tenant."
+      }
+      footer={
+        <>
           <Button variant={"secondary"} onClick={handleClose}>
             Cancel
           </Button>
@@ -126,9 +126,37 @@ function PolicyEditorModal({ policy, open, onOpenChange, onSaved }: EditorModalP
           >
             {isEdit ? "Save new revision" : "Create"}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Name</Label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={"e.g. tenant-overrides"}
+            disabled={isEdit}
+          />
+        </div>
+        <div>
+          <Label>Rego body</Label>
+          <HelpText>
+            Saved as a new revision if the content changed (identical content is
+            a no-op). Validated server-side before it is persisted.
+          </HelpText>
+          <Textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            onKeyDown={handleBodyKeyDown}
+            className={"font-mono text-xs min-h-[280px] overflow-auto"}
+            style={{ tabSize: 4 }}
+            rows={16}
+            spellCheck={false}
+          />
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -152,7 +180,9 @@ export default function PoliciesTable({
   const [createOpen, setCreateOpen] = useState(false);
   const [editPolicy, setEditPolicy] = useState<RawPolicy | null>(null);
   const [revisionsOf, setRevisionsOf] = useState<string | null>(null);
-  const revisionRequest = useApiCall<{ status: string }>("/ui/policies/revisions");
+  const revisionRequest = useApiCall<{ status: string }>(
+    "/ui/policies/revisions",
+  );
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
@@ -171,7 +201,9 @@ export default function PoliciesTable({
     });
     if (!choice) return;
 
-    const promise = revisionRequest.del(undefined, `/${policy.id}`).then(refresh);
+    const promise = revisionRequest
+      .del(undefined, `/${policy.id}`)
+      .then(refresh);
     notify({
       title: "Delete Revision",
       description: `Revision ${policy.revision} of '${policy.name}' deleted.`,
@@ -237,6 +269,7 @@ export default function PoliciesTable({
             variant={"default-outline"}
             size={"sm"}
             onClick={() => setRevisionsOf(row.original.name)}
+            tooltip={"Revisions"}
           >
             <HistoryIcon size={14} />
           </Button>
@@ -244,6 +277,7 @@ export default function PoliciesTable({
             variant={"default-outline"}
             size={"sm"}
             onClick={() => setEditPolicy(row.original)}
+            tooltip={"Edit"}
             disabled={!permission.policies?.update}
           >
             <PenSquare size={14} />
@@ -252,6 +286,7 @@ export default function PoliciesTable({
             variant={"danger-outline"}
             size={"sm"}
             onClick={() => deletePolicy(row.original)}
+            tooltip={"Delete"}
             disabled={!permission.policies?.delete}
           >
             <Trash2 size={14} />
@@ -304,7 +339,10 @@ export default function PoliciesTable({
         {(table) => (
           <>
             <DataTableRowsPerPage table={table} disabled={!policies?.length} />
-            <DataTableRefreshButton isDisabled={!policies?.length} onClick={refresh} />
+            <DataTableRefreshButton
+              isDisabled={!policies?.length}
+              onClick={refresh}
+            />
           </>
         )}
       </DataTable>

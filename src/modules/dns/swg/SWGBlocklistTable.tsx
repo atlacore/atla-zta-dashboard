@@ -6,13 +6,7 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -25,7 +19,10 @@ import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { SWGBlockedDomain, SWGBlockedDomainCreateRequest } from "@/interfaces/DNSSWG";
+import {
+  SWGBlockedDomain,
+  SWGBlockedDomainCreateRequest,
+} from "@/interfaces/DNSSWG";
 
 const BLOCKLIST_URL = "/ui/dns/swg/blocklist";
 
@@ -37,7 +34,11 @@ type CreateModalProps = {
   onCreated: () => void;
 };
 
-function CreateBlockedDomainModal({ open, onOpenChange, onCreated }: CreateModalProps) {
+function CreateBlockedDomainModal({
+  open,
+  onOpenChange,
+  onCreated,
+}: CreateModalProps) {
   const [domain, setDomain] = useState("");
   const request = useApiCall<SWGBlockedDomain>(BLOCKLIST_URL);
 
@@ -61,36 +62,42 @@ function CreateBlockedDomainModal({ open, onOpenChange, onCreated }: CreateModal
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <BanIcon size={16} />
-              Block Domain
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Domain</Label>
-            <Input
-              value={domain}
-              onChange={(e) => setDomain(e.target.value)}
-              placeholder={"e.g. ads.example.com"}
-              onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleCreate} disabled={!domain.trim()}>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      icon={<BanIcon size={20} />}
+      title={"Block Domain"}
+      description={"Requests to this domain will be blocked."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant={"primary"}
+            onClick={handleCreate}
+            disabled={!domain.trim()}
+          >
             <PlusCircle size={16} />
             Add
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Domain</Label>
+          <Input
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder={"e.g. ads.example.com"}
+            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
+          />
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -102,7 +109,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function SWGBlocklistTable({ domains, isLoading, headingTarget }: Readonly<Props>) {
+export default function SWGBlocklistTable({
+  domains,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
@@ -125,7 +136,9 @@ export default function SWGBlocklistTable({ domains, isLoading, headingTarget }:
     });
     if (!choice) return;
 
-    const promise = request.del(undefined, `/${entry.id}`).then(() => mutate(BLOCKLIST_URL));
+    const promise = request
+      .del(undefined, `/${entry.id}`)
+      .then(() => mutate(BLOCKLIST_URL));
     notify({
       title: "Unblock Domain",
       description: `'${entry.domain}' removed from the blocklist.`,
@@ -137,7 +150,9 @@ export default function SWGBlocklistTable({ domains, isLoading, headingTarget }:
   const columns: ColumnDef<SWGBlockedDomain>[] = [
     {
       accessorKey: "domain",
-      header: ({ column }) => <DataTableHeader column={column}>Domain</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Domain</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
         <div className={"flex items-center gap-2"}>
@@ -148,7 +163,9 @@ export default function SWGBlocklistTable({ domains, isLoading, headingTarget }:
     },
     {
       accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column}>Added</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Added</DataTableHeader>
+      ),
       sortingFn: "datetime",
       cell: ({ row }) => (
         <span className={"text-sm text-nb-gray-300"}>
@@ -165,6 +182,7 @@ export default function SWGBlocklistTable({ domains, isLoading, headingTarget }:
             variant={"danger-outline"}
             size={"sm"}
             onClick={() => deleteDomain(row.original)}
+            tooltip={"Unblock domain"}
           >
             <Trash2 size={14} />
           </Button>

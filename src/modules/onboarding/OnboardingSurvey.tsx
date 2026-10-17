@@ -310,7 +310,7 @@ export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
             <div className={"flex w-full flex-col gap-2"}>
               <div>
                 <Label>
-                  How many people in your company will use NetBird?
+                  How many people in your company will use ATLA ZTA?
                   <RequiredAsterisk />
                 </Label>
               </div>
@@ -335,7 +335,7 @@ export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
 
           <div className={"flex w-full flex-col gap-2"}>
             <Label>
-              How did you hear about NetBird?
+              How did you hear about ATLA ZTA?
               <RequiredAsterisk />
             </Label>
             <SelectDropdown
@@ -351,7 +351,7 @@ export const OnboardingSurvey = ({ domainCategory, onSubmit }: Props) => {
           <div className={"flex w-full flex-col gap-2"}>
             <div>
               <Label>
-                How do you plan to use NetBird?
+                How do you plan to use ATLA ZTA?
                 <RequiredAsterisk />
               </Label>
               <HelpText className={"mt-1.5"}>

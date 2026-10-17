@@ -34,7 +34,7 @@ export default function Networks() {
         <h1 ref={headingRef}>Networks</h1>
         <Paragraph>
           Networks allow you to access internal resources in LANs and VPCs
-          without installing NetBird on every machine.
+          without installing the ATLA client on every machine.
         </Paragraph>
         <Paragraph>
           Learn more about

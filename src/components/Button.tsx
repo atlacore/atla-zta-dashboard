@@ -1,5 +1,6 @@
 "use client";
 
+import ActionTooltip from "@components/ActionTooltip";
 import { cva, VariantProps } from "class-variance-authority";
 import classNames from "classnames";
 import React, { forwardRef } from "react";
@@ -11,6 +12,8 @@ export interface ButtonProps
     ButtonVariants {
   disabled?: boolean;
   stopPropagation?: boolean;
+  /** Hover label, for icon-only buttons. */
+  tooltip?: React.ReactNode;
 }
 
 export const buttonVariants = cva(
@@ -114,11 +117,12 @@ const Button = forwardRef(
       border = 1,
       size = "md",
       stopPropagation = true,
+      tooltip,
       ...props
     }: ButtonProps,
     ref: React.ForwardedRef<HTMLButtonElement>,
   ) => {
-    return (
+    const button = (
       <button
         type="button"
         {...props}
@@ -139,6 +143,12 @@ const Button = forwardRef(
       >
         {props.children}
       </button>
+    );
+
+    return tooltip ? (
+      <ActionTooltip label={tooltip}>{button}</ActionTooltip>
+    ) : (
+      button
     );
   },
 );

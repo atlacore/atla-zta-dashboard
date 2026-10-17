@@ -1,6 +1,6 @@
 import InlineLink from "@components/InlineLink";
 import { Modal, ModalPortal } from "@components/modal/Modal";
-import { NetBirdLogo } from "@components/NetBirdLogo";
+import { AtlaLogo } from "@components/AtlaLogo";
 import { notify } from "@components/Notification";
 import { GradientFadedBackground } from "@components/ui/GradientFadedBackground";
 import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
@@ -315,7 +315,7 @@ export const Onboarding = ({
                 intent === Intent.NETWORKS && step === 7 && "max-w-5xl",
               )}
             >
-              <NetBirdLogo size={"large"} mobile={false} />
+              <AtlaLogo size={"large"} mobile={false} />
 
               <div
                 className={
@@ -584,7 +584,7 @@ export const Onboarding = ({
                     "text-sm text-nb-gray-400 font-light pb-10 text-center px-4"
                   }
                 >
-                  Already know how NetBird works?
+                  Already know how ATLA ZTA works?
                   <InlineLink
                     href={"#"}
                     className={"!text-nb-gray-200 ml-1"}

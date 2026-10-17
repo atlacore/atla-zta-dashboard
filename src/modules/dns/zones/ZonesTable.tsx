@@ -6,27 +6,33 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@components/Dialog";
+import FormModal from "@components/modal/FormModal";
 import { Input } from "@components/Input";
 import { Label } from "@components/Label";
-import FancyToggleSwitch from "@components/FancyToggleSwitch";
+import CheckboxField from "@components/CheckboxField";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { DatabaseZapIcon, FileTextIcon, PenSquare, PlusCircle, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  DatabaseZapIcon,
+  FileTextIcon,
+  PenSquare,
+  PlusCircle,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { DNSZone, DNSZoneCreateRequest, DNSZoneUpdateRequest } from "@/interfaces/DNSZone";
+import {
+  DNSZone,
+  DNSZoneCreateRequest,
+  DNSZoneUpdateRequest,
+} from "@/interfaces/DNSZone";
 import RecordsModal from "@/modules/dns/zones/RecordsModal";
 
 const ZONES_URL = "/ui/dns/zones";
@@ -68,39 +74,49 @@ function CreateZoneModal({ open, onOpenChange, onCreated }: CreateModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <DatabaseZapIcon size={16} />
-              Create DNS Zone
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Domain</Label>
-            <Input value={domain} onChange={(e) => setDomain(e.target.value)} placeholder={"e.g. tenant.internal"} />
-          </div>
-          <div>
-            <Label>Admin email</Label>
-            <Input
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-              placeholder={"Optional — used in the zone's SOA record"}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={handleClose}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleCreate} disabled={!domain.trim()}>
+    <FormModal
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+      }}
+      icon={<DatabaseZapIcon size={20} />}
+      title={"Create DNS Zone"}
+      description={"Add an authoritative zone for this tenant."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button
+            variant={"primary"}
+            onClick={handleCreate}
+            disabled={!domain.trim()}
+          >
             <PlusCircle size={16} />
             Create
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Domain</Label>
+          <Input
+            value={domain}
+            onChange={(e) => setDomain(e.target.value)}
+            placeholder={"e.g. tenant.internal"}
+          />
+        </div>
+        <div>
+          <Label>Admin email</Label>
+          <Input
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            placeholder={"Optional — used in the zone's SOA record"}
+          />
+        </div>
+      </div>
+    </FormModal>
   );
 }
 
@@ -119,7 +135,10 @@ function EditZoneModal({ zone, open, onOpenChange, onSaved }: EditModalProps) {
   const request = useApiCall<DNSZone>(`${ZONES_URL}/${zone.id}`);
 
   const handleSave = () => {
-    const body: DNSZoneUpdateRequest = { adminEmail: adminEmail.trim() || undefined, isActive };
+    const body: DNSZoneUpdateRequest = {
+      adminEmail: adminEmail.trim() || undefined,
+      isActive,
+    };
     const promise = request.put(body).then(() => {
       onSaved();
       onOpenChange(false);
@@ -133,34 +152,39 @@ function EditZoneModal({ zone, open, onOpenChange, onSaved }: EditModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={"max-w-md"}>
-        <DialogHeader>
-          <DialogTitle>
-            <div className={"flex items-center gap-2"}>
-              <PenSquare size={16} />
-              Edit {zone.domain}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-        <div className={"px-8 pb-4 flex flex-col gap-4"}>
-          <div>
-            <Label>Admin email</Label>
-            <Input value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
-          </div>
-          <FancyToggleSwitch
-            value={isActive}
-            onChange={setIsActive}
-            label={"Active"}
-            helpText={"Inactive zones are not served"}
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={<PenSquare size={20} />}
+      title={<>Edit {zone.domain}</>}
+      description={"Change the zone's contact or whether it is served."}
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button variant={"primary"} onClick={handleSave}>
+            Save
+          </Button>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <div>
+          <Label>Admin email</Label>
+          <Input
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
           />
         </div>
-        <DialogFooter>
-          <Button variant={"secondary"} onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button variant={"primary"} onClick={handleSave}>Save</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <CheckboxField
+          label={"Active"}
+          checked={isActive}
+          onChange={setIsActive}
+          description={"Inactive zones are not served"}
+        />
+      </div>
+    </FormModal>
   );
 }
 
@@ -172,7 +196,11 @@ type Props = {
   headingTarget?: HTMLHeadingElement | null;
 };
 
-export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly<Props>) {
+export default function ZonesTable({
+  zones,
+  isLoading,
+  headingTarget,
+}: Readonly<Props>) {
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
@@ -197,7 +225,9 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
     });
     if (!choice) return;
 
-    const promise = request.del(undefined, `/${zone.id}`).then(() => mutate(ZONES_URL));
+    const promise = request
+      .del(undefined, `/${zone.id}`)
+      .then(() => mutate(ZONES_URL));
     notify({
       title: "Delete DNS Zone",
       description: `Zone '${zone.domain}' deleted.`,
@@ -209,7 +239,9 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
   const columns: ColumnDef<DNSZone>[] = [
     {
       accessorKey: "domain",
-      header: ({ column }) => <DataTableHeader column={column}>Domain</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Domain</DataTableHeader>
+      ),
       sortingFn: "text",
       cell: ({ row }) => (
         <div className={"flex items-center gap-2"}>
@@ -220,23 +252,40 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
     },
     {
       accessorKey: "isActive",
-      header: ({ column }) => <DataTableHeader column={column}>Active</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Active</DataTableHeader>
+      ),
+      cell: ({ row }) =>
+        row.original.isActive ? (
+          <CheckCircle2
+            size={18}
+            className={"text-green-500"}
+            aria-label={"Active"}
+          />
+        ) : (
+          <XCircle
+            size={18}
+            className={"text-nb-gray-500"}
+            aria-label={"Inactive"}
+          />
+        ),
+    },
+    {
+      accessorKey: "adminEmail",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Admin Email</DataTableHeader>
+      ),
       cell: ({ row }) => (
-        <span className={`text-sm ${row.original.isActive ? "text-green-400" : "text-nb-gray-500"}`}>
-          {row.original.isActive ? "Yes" : "No"}
+        <span className={"text-sm text-nb-gray-300"}>
+          {row.original.adminEmail}
         </span>
       ),
     },
     {
-      accessorKey: "adminEmail",
-      header: ({ column }) => <DataTableHeader column={column}>Admin Email</DataTableHeader>,
-      cell: ({ row }) => (
-        <span className={"text-sm text-nb-gray-300"}>{row.original.adminEmail}</span>
-      ),
-    },
-    {
       accessorKey: "createdAt",
-      header: ({ column }) => <DataTableHeader column={column}>Created</DataTableHeader>,
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Created</DataTableHeader>
+      ),
       sortingFn: "datetime",
       cell: ({ row }) => (
         <span className={"text-sm text-nb-gray-300"}>
@@ -249,13 +298,28 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
       header: "",
       cell: ({ row }) => (
         <div className={"flex justify-end pr-4 gap-2"}>
-          <Button variant={"default-outline"} size={"sm"} onClick={() => setRecordsZone(row.original)}>
+          <Button
+            variant={"default-outline"}
+            size={"sm"}
+            onClick={() => setRecordsZone(row.original)}
+            tooltip={"Records"}
+          >
             <FileTextIcon size={14} />
           </Button>
-          <Button variant={"default-outline"} size={"sm"} onClick={() => setEditZone(row.original)}>
+          <Button
+            variant={"default-outline"}
+            size={"sm"}
+            onClick={() => setEditZone(row.original)}
+            tooltip={"Edit"}
+          >
             <PenSquare size={14} />
           </Button>
-          <Button variant={"danger-outline"} size={"sm"} onClick={() => deleteZone(row.original)}>
+          <Button
+            variant={"danger-outline"}
+            size={"sm"}
+            onClick={() => deleteZone(row.original)}
+            tooltip={"Delete"}
+          >
             <Trash2 size={14} />
           </Button>
         </div>
@@ -265,12 +329,18 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
 
   return (
     <>
-      <CreateZoneModal open={createOpen} onOpenChange={setCreateOpen} onCreated={() => mutate(ZONES_URL)} />
+      <CreateZoneModal
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={() => mutate(ZONES_URL)}
+      />
       {editZone && (
         <EditZoneModal
           zone={editZone}
           open={true}
-          onOpenChange={(v) => { if (!v) setEditZone(null); }}
+          onOpenChange={(v) => {
+            if (!v) setEditZone(null);
+          }}
           onSaved={() => mutate(ZONES_URL)}
         />
       )}
@@ -278,7 +348,9 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
         <RecordsModal
           zone={recordsZone}
           open={true}
-          onOpenChange={(v) => { if (!v) setRecordsZone(null); }}
+          onOpenChange={(v) => {
+            if (!v) setRecordsZone(null);
+          }}
         />
       )}
       <DataTable
@@ -302,7 +374,10 @@ export default function ZonesTable({ zones, isLoading, headingTarget }: Readonly
         {(table) => (
           <>
             <DataTableRowsPerPage table={table} disabled={!zones?.length} />
-            <DataTableRefreshButton isDisabled={!zones?.length} onClick={() => mutate(ZONES_URL)} />
+            <DataTableRefreshButton
+              isDisabled={!zones?.length}
+              onClick={() => mutate(ZONES_URL)}
+            />
           </>
         )}
       </DataTable>

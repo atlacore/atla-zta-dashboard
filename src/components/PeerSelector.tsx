@@ -193,7 +193,7 @@ export function PeerSelector({
                     className={"w-full flex items-center justify-between"}
                     content={
                       <div className={"max-w-[240px] text-xs"}>
-                        Please update NetBird to at least{" "}
+                        Please update the ATLA client to at least{" "}
                         <span className={"text-netbird"}>v0.36.6</span> or later
                         to use this peer as a routing peer.
                       </div>

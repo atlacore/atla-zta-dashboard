@@ -12,10 +12,11 @@ import { usePermissions } from "@/contexts/PermissionsProvider";
 import { Device } from "@/interfaces/Device";
 import PageContainer from "@/layouts/PageContainer";
 
+const ThisBrowserDevice = lazy(() => import("@/modules/devices/ThisBrowserDevice"));
 const DevicesTable = lazy(() => import("@/modules/devices/DevicesTable"));
 
 export default function Devices() {
-  const { data: devices, isLoading } = useFetchApi<Device[]>("/ui/devices");
+  const { data: devices, isLoading, mutate } = useFetchApi<Device[]>("/ui/devices");
   const { permission } = usePermissions();
 
   const { ref: headingRef, portalTarget } =
@@ -38,6 +39,9 @@ export default function Devices() {
           session already established.
         </Paragraph>
       </div>
+      <Suspense fallback={null}>
+        <ThisBrowserDevice onChanged={() => mutate()} />
+      </Suspense>
       <RestrictedAccess page={"Devices"} hasAccess={permission.devices.read}>
         <Suspense fallback={<SkeletonTable />}>
           <DevicesTable

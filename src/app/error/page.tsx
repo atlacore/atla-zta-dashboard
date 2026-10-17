@@ -5,7 +5,7 @@ import Paragraph from "@components/Paragraph";
 import { ArrowRightIcon, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import NetBirdIcon from "@/assets/icons/NetBirdIcon";
+import AtlaIcon from "@/assets/icons/AtlaIcon";
 import { auth } from "@/utils/auth";
 
 export default function ErrorPage() {
@@ -54,7 +54,7 @@ export default function ErrorPage() {
 
   const getDescription = () => {
     if (isBlockedUser) {
-      return "Your access has been blocked by the NetBird account administrator, possibly due to new user approval requirements or security policies. Please contact your administrator to regain access.";
+      return "Your access has been blocked by the ATLA ZTA account administrator, possibly due to new user approval requirements or security policies. Please contact your administrator to regain access.";
     }
     if (isPendingApproval) {
       return "Your account is pending approval from an administrator. Please wait for approval before accessing the dashboard.";
@@ -65,7 +65,7 @@ export default function ErrorPage() {
   return (
     <div className="flex items-center justify-center flex-col h-screen max-w-xl mx-auto">
       <div className="bg-nb-gray-930 mb-3 border border-nb-gray-900 h-12 w-12 rounded-md flex items-center justify-center">
-        <NetBirdIcon size={23} />
+        <AtlaIcon size={23} />
       </div>
 
       <h1 className="text-center mt-2">{getTitle()}</h1>
