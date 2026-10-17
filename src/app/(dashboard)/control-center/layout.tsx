@@ -3,6 +3,6 @@ import type { Metadata } from "next";
 import BlankLayout from "@/layouts/BlankLayout";
 
 export const metadata: Metadata = {
-  title: `Control Center - ${globalMetaTitle}`,
+  title: `Topology - ${globalMetaTitle}`,
 };
 export default BlankLayout;

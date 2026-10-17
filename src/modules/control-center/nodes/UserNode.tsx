@@ -25,19 +25,38 @@ export const UserNode = ({ data }: UserNodeProps) => {
         "flex items-center gap-3 pl-3 pr-5 py-3",
       )}
     >
-      <div className={"h-9 w-9 bg-nb-gray-850 rounded-md flex items-center justify-center shrink-0"}>
+      <div
+        className={
+          "h-9 w-9 bg-nb-gray-850 rounded-md flex items-center justify-center shrink-0"
+        }
+      >
         <User2 size={14} />
       </div>
       <div>
-        <div className={"text-nb-gray-200 text-sm whitespace-nowrap"}>{label}</div>
-        <Badge variant={user.role === Role.Owner ? "netbird" : "gray"} size={"xs"}>
+        <div className={"text-nb-gray-200 text-sm whitespace-nowrap"}>
+          {label}
+        </div>
+        <Badge
+          variant={user.role === Role.Owner ? "netbird" : "gray"}
+          size={"xs"}
+        >
           {ROLE_ICON[user.role]}
           {user.role}
         </Badge>
       </div>
 
-      <Handle type="source" position={Position.Right} id={"sr"} className={"opacity-0"} />
-      <Handle type="target" position={Position.Left} id={"tl"} className={"opacity-0"} />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id={"sr"}
+        className={"opacity-0"}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={"tl"}
+        className={"opacity-0"}
+      />
     </div>
   );
 };
