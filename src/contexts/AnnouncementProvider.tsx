@@ -8,13 +8,9 @@ import React, {
   useState,
 } from "react";
 import { usePermissions } from "@/contexts/PermissionsProvider";
-import { isLocalDev, isNetBirdHosted } from "@utils/netbird";
 import announcementFile from "../../announcements.json";
 
-const ANNOUNCEMENTS_URL =
-  "https://raw.githubusercontent.com/netbirdio/dashboard/main/announcements.json";
 const STORAGE_KEY = "netbird-announcements";
-const CACHE_DURATION_MS = 30 * 60 * 1000;
 const BANNER_HEIGHT = 40;
 
 interface AnnouncementStore {
@@ -30,7 +26,6 @@ export interface Announcement extends AnnouncementVariant {
   linkText?: string;
   isExternal?: boolean;
   closeable: boolean;
-  isCloudOnly: boolean;
 }
 
 interface AnnouncementInfo extends Announcement {
@@ -63,22 +58,10 @@ const getAnnouncements = async (): Promise<AnnouncementInfo[]> => {
 
     const now = Date.now();
 
-    let raw: Announcement[];
+    // Announcements ship with the dashboard (announcements.json); nothing is fetched from elsewhere.
+    const raw = announcementFile as Announcement[];
 
-    if (isLocalDev()) {
-      raw = announcementFile as Announcement[];
-    } else if (stored && now - stored.timestamp < CACHE_DURATION_MS) {
-      raw = stored.announcements;
-    } else {
-      const response = await fetch(ANNOUNCEMENTS_URL);
-      if (!response.ok) return [];
-
-      raw = await response.json();
-    }
-
-    const isCloud = isNetBirdHosted();
-    const filtered = raw.filter((a) => !a.isCloudOnly || isCloud);
-    const hashes = new Set(filtered.map((a) => md5(a.text).toString()));
+    const hashes = new Set(raw.map((a) => md5(a.text).toString()));
     const closed = (stored?.closedAnnouncements ?? []).filter((h) =>
       hashes.has(h),
     );
@@ -94,9 +77,10 @@ const getAnnouncements = async (): Promise<AnnouncementInfo[]> => {
       );
     } catch {}
 
-    return filtered.map((a) => {
+    return raw.map((a) => {
       const hash = md5(a.text).toString();
-      return { ...a, hash, isOpen: !closed.includes(hash) };
+      // A banner that cannot be closed always shows, even if it was closed back when it could be.
+      return { ...a, hash, isOpen: !a.closeable || !closed.includes(hash) };
     });
   } catch {
     return [];
