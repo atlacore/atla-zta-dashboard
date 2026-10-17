@@ -4,7 +4,16 @@ interface Config {
   googleAnalyticsID?: string;
   googleTagManagerID?: string;
   sentryDsn?: string;
+  /** Where the "Documentation" links point: the site built from the repo's docs/ folder. */
+  docsUrl: string;
+  /** The main (production) host of ATLA ZTA; the client install commands point at it. */
+  publicUrl: string;
 }
+
+const DEFAULT_PUBLIC_URL = "https://zta.atla.com";
+
+// Matches `url` in docs/docusaurus.config.js; override it with docsUrl in the config.
+const DEFAULT_DOCS_URL = "https://docs.atla.example";
 
 const loadConfig = (): Config => {
   let configJson: any;
@@ -25,6 +34,8 @@ const loadConfig = (): Config => {
     googleAnalyticsID: configJson?.googleAnalyticsID || undefined,
     googleTagManagerID: configJson?.googleTagManagerID || undefined,
     sentryDsn: configJson?.sentryDsn || undefined,
+    docsUrl: configJson?.docsUrl || DEFAULT_DOCS_URL,
+    publicUrl: configJson?.publicUrl || DEFAULT_PUBLIC_URL,
   };
 };
 
