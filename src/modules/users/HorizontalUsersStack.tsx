@@ -1,7 +1,7 @@
 import FullTooltip from "@components/FullTooltip";
 import { ScrollArea } from "@components/ScrollArea";
 import TextWithTooltip from "@components/ui/TextWithTooltip";
-import { cn, generateColorFromString } from "@utils/helpers";
+import { cn, generateColorFromString, isSystemUser } from "@utils/helpers";
 import { orderBy } from "lodash";
 import * as React from "react";
 import { useMemo } from "react";
@@ -57,7 +57,7 @@ export const HorizontalUsersStack = ({
                   <span className={" text-nb-gray-200"}>
                     <TextWithTooltip
                       text={
-                        user?.email === "NetBird"
+                        isSystemUser(user)
                           ? "System"
                           : user?.name || user?.id
                       }
@@ -66,7 +66,7 @@ export const HorizontalUsersStack = ({
                   </span>
                   <span className={"text-nb-gray-350 font-light"}>
                     <TextWithTooltip
-                      text={user?.email || "NetBird"}
+                      text={user?.email || "ATLA ZTA"}
                       maxChars={500}
                     />
                   </span>

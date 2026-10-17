@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@components/Popover";
 import TextWithTooltip from "@components/ui/TextWithTooltip";
 import { VirtualScrollAreaList } from "@components/VirtualScrollAreaList";
 import { useSearch } from "@hooks/useSearch";
-import { cn } from "@utils/helpers";
+import { cn, isSystemUser } from "@utils/helpers";
 import { ChevronsUpDown, MapPin } from "lucide-react";
 import * as React from "react";
 import { memo, useState } from "react";
@@ -170,7 +170,7 @@ export const UserListItem = ({
   className,
   variant,
 }: UserListItemProps) => {
-  const isSystemUser = user?.email === "NetBird" || user?.email === "";
+  const isSystem = isSystemUser(user);
   const maxChars = variant === "selected" ? 30 : 20;
 
   return (
@@ -197,7 +197,7 @@ export const UserListItem = ({
           )}
         >
           <TextWithTooltip
-            text={isSystemUser ? "System" : user?.name || user?.id}
+            text={isSystem ? "System" : user?.name || user?.id}
             maxChars={maxChars}
           />
         </span>
@@ -209,7 +209,7 @@ export const UserListItem = ({
           )}
         >
           <TextWithTooltip
-            text={user?.email || "NetBird"}
+            text={user?.email || "ATLA ZTA"}
             maxChars={maxChars}
           />
         </span>
