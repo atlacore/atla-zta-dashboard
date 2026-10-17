@@ -2,17 +2,18 @@ import Button from "@components/Button";
 import { Modal, ModalTrigger } from "@components/modal/Modal";
 import { DownloadIcon } from "lucide-react";
 import React, { useState } from "react";
-import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import SetupModal from "@/modules/setup-client-modal/SetupModal";
 
-export function InstallNetBirdButton() {
+// Opens the ATLA console client install guide.
+export function InstallClientButton() {
   const [installModal, setInstallModal] = useState(false);
 
   return (
     <Modal open={installModal} onOpenChange={setInstallModal}>
       <ModalTrigger asChild>
-        <Button variant={"secondary"} size={"sm"}>
+        <Button variant={"primary"}>
           <DownloadIcon size={16} />
-          Install NetBird
+          Install ATLA client
         </Button>
       </ModalTrigger>
       <SetupModal />

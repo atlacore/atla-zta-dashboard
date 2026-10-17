@@ -5,7 +5,7 @@ import { PlusCircle } from "lucide-react";
 import React, { memo, useState } from "react";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Peer } from "@/interfaces/Peer";
-import SetupModal from "@/modules/setup-netbird-modal/SetupModal";
+import SetupModal from "@/modules/setup-client-modal/SetupModal";
 import { useLoggedInUser } from "@/contexts/UsersProvider";
 
 function AddPeerButton() {
