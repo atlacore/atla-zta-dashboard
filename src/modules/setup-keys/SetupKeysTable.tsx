@@ -20,6 +20,7 @@ import ActionTooltip from "@components/ActionTooltip";
 import FormModal from "@components/modal/FormModal";
 import { Label } from "@components/Label";
 import { Input } from "@components/Input";
+import NoResults from "@components/ui/NoResults";
 import { useDialog } from "@/contexts/DialogProvider";
 
 // ── Create Modal ────────────────────────────────────────────────────────────
@@ -168,6 +169,9 @@ export default function SetupKeysTable({
   const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
   const sdkKeyRequest = useApiCall<{ status: string }>("/ui/sdk-keys");
+  // Also refreshes filtered lists such as /ui/sdk-keys?created_by=<id>.
+  const refreshKeys = () =>
+    mutate((key) => typeof key === "string" && key.startsWith("/ui/sdk-keys"));
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
@@ -187,7 +191,7 @@ export default function SetupKeysTable({
 
     const promise = sdkKeyRequest
       .del(undefined, `/${key.id}`)
-      .then(() => mutate("/ui/sdk-keys"));
+      .then(() => refreshKeys());
     notify({
       title: "Revoke SDK Key",
       description: `Key '${key.name}' successfully revoked.`,
@@ -283,7 +287,7 @@ export default function SetupKeysTable({
       <CreateSDKKeyModal
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onCreated={() => mutate("/ui/sdk-keys")}
+        onCreated={() => refreshKeys()}
       />
       <DataTable
         headingTarget={headingTarget}
@@ -294,6 +298,16 @@ export default function SetupKeysTable({
         columns={columns}
         data={setupKeys ?? []}
         searchPlaceholder={"Search by name..."}
+        getStartedCard={
+          <NoResults
+            className={"py-4"}
+            title={"No access tokens"}
+            description={
+              "Access tokens give programmatic access to the Atla API. Create one to get started."
+            }
+            icon={<KeyRound size={20} className={"text-nb-gray-300"} />}
+          />
+        }
         rightSide={() =>
           permission.setup_keys?.create ? (
             <Button variant={"primary"} onClick={() => setCreateOpen(true)}>
@@ -308,7 +322,7 @@ export default function SetupKeysTable({
             <DataTableRowsPerPage table={table} disabled={!setupKeys?.length} />
             <DataTableRefreshButton
               isDisabled={!setupKeys?.length}
-              onClick={() => mutate("/ui/sdk-keys")}
+              onClick={() => refreshKeys()}
             />
           </>
         )}

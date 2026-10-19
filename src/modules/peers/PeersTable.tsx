@@ -11,6 +11,8 @@ import { ShieldX, Wifi } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import React from "react";
 import Button from "@components/Button";
+import NoResults from "@components/ui/NoResults";
+import PeerIcon from "@/assets/icons/PeerIcon";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { PeerSession } from "@/interfaces/Peer";
 import { usePeers } from "@/contexts/PeersProvider";
@@ -177,6 +179,16 @@ export default function PeersTable({
       searchPlaceholder={"Search by IP or region..."}
       columnVisibility={{ search: false }}
       isLoading={isLoading}
+      getStartedCard={
+        <NoResults
+          className={"py-4"}
+          title={"No active peers"}
+          description={
+            "Sessions appear here once a device connects to the network."
+          }
+          icon={<PeerIcon size={20} className={"fill-nb-gray-300"} />}
+        />
+      }
       onRowClick={(row, cell) => {
         if (cell === "actions") return;
         router.push("/peer?id=" + row.original.id);

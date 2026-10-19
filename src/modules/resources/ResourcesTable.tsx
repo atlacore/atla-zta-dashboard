@@ -27,6 +27,7 @@ import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { usePermissions } from "@/contexts/PermissionsProvider";
+import CopyToClipboardText from "@components/CopyToClipboardText";
 import { buildResourceArn } from "@/utils/arn";
 import { DNSZone } from "@/interfaces/DNSZone";
 import {
@@ -526,14 +527,13 @@ export default function ResourcesTable({
       cell: ({ row }) => {
         const arn = buildResourceArn(row.original);
         return (
-          <span
-            className={
-              "font-mono text-xs text-nb-gray-400 truncate max-w-[260px] block"
-            }
-            title={arn}
+          <CopyToClipboardText
+            message={arn}
+            alwaysShowIcon={true}
+            className={"font-mono text-xs text-nb-gray-400 max-w-[300px]"}
           >
-            {arn}
-          </span>
+            <span title={arn}>{arn}</span>
+          </CopyToClipboardText>
         );
       },
     },

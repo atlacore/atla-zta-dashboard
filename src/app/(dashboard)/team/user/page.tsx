@@ -2,21 +2,52 @@
 
 import Breadcrumbs from "@components/Breadcrumbs";
 import Button from "@components/Button";
+import { Callout } from "@components/Callout";
 import Card from "@components/Card";
+import { InstallClientButton } from "@components/ui/InstallClientButton";
+import NoResults from "@components/ui/NoResults";
 import { notify } from "@components/Notification";
-import Separator from "@components/Separator";
 import FullScreenLoading from "@components/ui/FullScreenLoading";
 import { RestrictedAccess } from "@components/ui/RestrictedAccess";
+import SkeletonTable from "@components/skeletons/SkeletonTable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@components/Tabs";
+import { usePortalElement } from "@hooks/usePortalElement";
 import useRedirect from "@hooks/useRedirect";
-import { useApiCall } from "@utils/api";
+import useFetchApi, { useApiCall } from "@utils/api";
 import { generateColorFromString } from "@utils/helpers";
 import dayjs from "dayjs";
-import { Ban, Mail, ShieldIcon, User2 } from "lucide-react";
+import {
+  Ban,
+  Building2,
+  CalendarDays,
+  CircleDot,
+  KeyRound,
+  Laptop,
+  LogInIcon,
+  Mail,
+  ShieldIcon,
+  User2,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useMemo, useState } from "react";
+import React, { Suspense, useMemo, useState } from "react";
+import { DateRange } from "react-day-picker";
 import { useSWRConfig } from "swr";
+import ActivityIcon from "@/assets/icons/ActivityIcon";
+import PeerIcon from "@/assets/icons/PeerIcon";
 import TeamIcon from "@/assets/icons/TeamIcon";
 import { usePermissions } from "@/contexts/PermissionsProvider";
+import PeersProvider, { usePeers } from "@/contexts/PeersProvider";
+import {
+  BackendAuditEvent,
+  transformAuditEvents,
+} from "@/interfaces/ActivityEvent";
+import { Device } from "@/interfaces/Device";
+import { IdentityProvider } from "@/interfaces/IdentityProvider";
+import { SDKKey } from "@/interfaces/SetupKey";
+import ActivityTable from "@/modules/activity/ActivityTable";
+import DevicesTable from "@/modules/devices/DevicesTable";
+import PeersTable from "@/modules/peers/PeersTable";
+import SetupKeysTable from "@/modules/setup-keys/SetupKeysTable";
 import { useLoggedInUser, useUsers } from "@/contexts/UsersProvider";
 import { useHasChanges } from "@/hooks/useHasChanges";
 import { Role, User } from "@/interfaces/User";
@@ -156,8 +187,9 @@ function UserOverview({ user, canEdit }: Readonly<Props>) {
         <div className={"flex gap-10 w-full mt-8 max-w-6xl items-start"}>
           <UserInformationCard user={user} />
 
+          <div className={"w-1/2 flex flex-col gap-4"}>
           {canEdit && (
-            <Card>
+            <Card className={"w-full"}>
               <Card.List>
                 <Card.ListItem
                   tooltip={false}
@@ -182,12 +214,240 @@ function UserOverview({ user, canEdit }: Readonly<Props>) {
               </Card.List>
             </Card>
           )}
+          <UserTenantCard user={user} />
+          </div>
         </div>
       </div>
 
-      <Separator />
+      <UserTabs user={user} />
     </PageContainer>
   );
+}
+
+const TAB_TITLES: Record<string, string> = {
+  peers: "Peers",
+  tokens: "Access Tokens",
+  devices: "Devices",
+  activity: "Activity",
+};
+
+function UserPeersTable({
+  headingTarget,
+}: Readonly<{ headingTarget: HTMLHeadingElement | null }>) {
+  const { peers, isLoading } = usePeers();
+  return (
+    <PeersTable
+      isLoading={isLoading}
+      peers={peers}
+      headingTarget={headingTarget}
+    />
+  );
+}
+
+function UserTabs({ user }: Readonly<{ user: User }>) {
+  const [tab, setTab] = useState("peers");
+  const { permission } = usePermissions();
+  const { data: userKeys, isLoading: keysLoading } = useFetchApi<SDKKey[]>(
+    `/ui/sdk-keys?created_by=${user.id}`,
+  );
+
+  const { ref: headingRef, portalTarget } =
+    usePortalElement<HTMLHeadingElement>();
+
+  return (
+    <Tabs value={tab} onValueChange={setTab}>
+      <TabsList justify={"start"} className={"px-8"}>
+        <TabsTrigger value={"peers"} className={"focus-visible:outline-none"}>
+          <PeerIcon size={16} />
+          Peers
+        </TabsTrigger>
+        <TabsTrigger value={"tokens"} className={"focus-visible:outline-none"}>
+          <KeyRound size={16} />
+          Access Tokens
+        </TabsTrigger>
+        <TabsTrigger value={"devices"} className={"focus-visible:outline-none"}>
+          <Laptop size={16} />
+          Devices
+        </TabsTrigger>
+        <TabsTrigger value={"activity"} className={"focus-visible:outline-none"}>
+          <ActivityIcon size={16} />
+          Activity
+        </TabsTrigger>
+      </TabsList>
+
+      <h2 ref={headingRef} className={"px-8 pt-6 pb-4"}>
+        {TAB_TITLES[tab]}
+      </h2>
+
+      <TabsContent value={"peers"}>
+        <Suspense fallback={<SkeletonTable />}>
+          <PeersProvider userId={user.id}>
+            <UserPeersTable headingTarget={portalTarget} />
+          </PeersProvider>
+        </Suspense>
+      </TabsContent>
+
+      <TabsContent value={"tokens"}>
+        <RestrictedAccess
+          page={"Access Tokens"}
+          hasAccess={permission.setup_keys.read}
+        >
+          <div className={"px-8 pb-6"}>
+            <Callout variant={"info"} className={"max-w-3xl items-center"}>
+              <div className={"flex items-center justify-between gap-6"}>
+                <span>
+                  Access tokens are SDK keys. They authenticate the Atla SDK and
+                  the standalone <b>atla-client</b> binary installed on a
+                  device, for example <code>atla-client --token atla_...</code>.
+                  The key is shown only once when it is created.
+                </span>
+                <InstallClientButton />
+              </div>
+            </Callout>
+          </div>
+          <Suspense fallback={<SkeletonTable />}>
+            <SetupKeysTable
+              setupKeys={userKeys}
+              isLoading={keysLoading}
+              headingTarget={portalTarget}
+            />
+          </Suspense>
+        </RestrictedAccess>
+      </TabsContent>
+
+      <TabsContent value={"devices"}>
+        <RestrictedAccess page={"Devices"} hasAccess={permission.devices.read}>
+          <UserDevicesTable userId={user.id} headingTarget={portalTarget} />
+        </RestrictedAccess>
+      </TabsContent>
+
+      <TabsContent value={"activity"}>
+        <RestrictedAccess page={"Activity"} hasAccess={permission.events.read}>
+          <UserActivityTable user={user} headingTarget={portalTarget} />
+        </RestrictedAccess>
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+function UserDevicesTable({
+  userId,
+  headingTarget,
+}: Readonly<{ userId: string; headingTarget: HTMLHeadingElement | null }>) {
+  const { data: devices, isLoading } = useFetchApi<Device[]>(
+    `/ui/devices?user_id=${userId}`,
+  );
+  return (
+    <Suspense fallback={<SkeletonTable />}>
+      <DevicesTable
+        devices={devices}
+        isLoading={isLoading}
+        headingTarget={headingTarget}
+      />
+    </Suspense>
+  );
+}
+
+// Events the user initiated or that targeted them, newest first.
+function UserActivityTable({
+  user,
+  headingTarget,
+}: Readonly<{ user: User; headingTarget: HTMLHeadingElement | null }>) {
+  const userId = user.id;
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: dayjs().subtract(14, "day").toDate(),
+    to: dayjs().toDate(),
+  });
+
+  const eventsUrl = useMemo(() => {
+    const params = new URLSearchParams({ user_id: userId });
+    if (dateRange?.from)
+      params.set("from", dayjs(dateRange.from).format("YYYY-MM-DD"));
+    if (dateRange?.to)
+      params.set("to", dayjs(dateRange.to).add(1, "day").format("YYYY-MM-DD"));
+    return `/ui/events?${params.toString()}`;
+  }, [userId, dateRange]);
+
+  const {
+    data: rawEvents,
+    isLoading,
+    mutate,
+  } = useFetchApi<BackendAuditEvent[]>(eventsUrl);
+  const events = useMemo(
+    () => (rawEvents ? transformAuditEvents(rawEvents) : undefined),
+    [rawEvents],
+  );
+
+  return (
+    <Suspense fallback={<SkeletonTable />}>
+      <ActivityTable
+        events={events}
+        isLoading={isLoading}
+        headingTarget={headingTarget}
+        dateRange={dateRange}
+        onDateRangeChange={setDateRange}
+        onRefresh={() => mutate()}
+        initialUser={user.email || user.displayName || user.id}
+        hideAllUsersOption={true}
+        uniqueKey={`user-activity-${userId}`}
+        getStartedCard={
+          <NoResults
+            className={"py-4"}
+            title={"No activity in this period"}
+            description={
+              "Events initiated by this user, or targeting them, will appear here."
+            }
+            icon={<ActivityIcon size={20} className={"fill-nb-gray-300"} />}
+          />
+        }
+      />
+    </Suspense>
+  );
+}
+
+// GET /ui/tenants returns only the caller's tenant, which is the one every listed user belongs to.
+function UserTenantCard({ user }: Readonly<{ user: User }>) {
+  const { data: tenants } = useFetchApi<{ id: string; name: string }[]>(
+    "/ui/tenants",
+  );
+  const tenant = tenants?.find((t) => t.id === user.tenantId);
+
+  return (
+    <Card className={"w-full"}>
+      <Card.List>
+        <Card.ListItem
+          tooltip={false}
+          label={
+            <span className={"flex items-center gap-2.5 whitespace-nowrap"}>
+              <Building2 size={16} />
+              Tenant
+            </span>
+          }
+          value={
+            // Same height as the role selector row so both cards line up.
+            <div className={"h-[42px] flex items-center"}>
+              {tenant?.name ?? user.tenantId}
+            </div>
+          }
+        />
+      </Card.List>
+    </Card>
+  );
+}
+
+// Local accounts have no identity provider; otherwise the user signed up through one.
+function UserAuthSourceValue({ user }: Readonly<{ user: User }>) {
+  const { permission } = usePermissions();
+  const { data: providers } = useFetchApi<IdentityProvider[]>(
+    "/ui/identity-providers",
+    true,
+    false,
+    !!user.identityProviderId && permission.identity_providers.read,
+  );
+
+  if (!user.identityProviderId) return <>Local password</>;
+  const provider = providers?.find((p) => p.id === user.identityProviderId);
+  return <>{provider?.name ?? "External identity provider"}</>;
 }
 
 function UserInformationCard({ user }: Readonly<{ user: User }>) {
@@ -206,7 +466,7 @@ function UserInformationCard({ user }: Readonly<{ user: User }>) {
 
         <Card.ListItem
           tooltip={false}
-          label={<>Status</>}
+          label={<><CircleDot size={16} />Status</>}
           value={<UserStatusCell user={user} />}
         />
 
@@ -219,7 +479,13 @@ function UserInformationCard({ user }: Readonly<{ user: User }>) {
         )}
 
         <Card.ListItem
-          label={<>Member since</>}
+          tooltip={false}
+          label={<><LogInIcon size={16} />Sign-in method</>}
+          value={<UserAuthSourceValue user={user} />}
+        />
+
+        <Card.ListItem
+          label={<><CalendarDays size={16} />Member since</>}
           value={dayjs(user.createdAt).format("D MMMM, YYYY")}
         />
       </Card.List>

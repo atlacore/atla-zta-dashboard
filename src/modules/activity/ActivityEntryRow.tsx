@@ -47,6 +47,9 @@ export const ActivityEntryRow = ({ event }: { event: ActivityEvent }) => {
   };
 
   const user = getActivityUser();
+  // A person is shown by email alone, no initiator means the system did it.
+  const initiator =
+    user?.email || user?.displayName || user?.name || event.initiator_id;
 
   const color = useMemo(() => {
     return getColorFromCode(event.activity_code);
@@ -89,18 +92,12 @@ export const ActivityEntryRow = ({ event }: { event: ActivityEvent }) => {
                   color: generateColorFromUser(user),
                 }}
               >
-                {!user?.name && !user?.id && <Cog size={12} />}
-                {user?.name?.charAt(0) || user?.id?.charAt(0)}
+                {!initiator && <Cog size={12} />}
+                {initiator?.charAt(0)}
               </div>
 
               <span className={"text-sm text-nb-gray-200"}>
-                <TextWithTooltip
-                  text={user?.name || user?.id || "System"}
-                  maxChars={20}
-                />
-              </span>
-              <span className={"text-sm text-nb-gray-400 font-light"}>
-                <TextWithTooltip text={user?.email || ""} maxChars={20} />
+                <TextWithTooltip text={initiator || "System"} maxChars={32} />
               </span>
               {isExternal && (
                 <span className={"flex items-center"}>
