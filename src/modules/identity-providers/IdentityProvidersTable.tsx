@@ -6,11 +6,12 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
+import NoResults from "@components/ui/NoResults";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { cn } from "@utils/helpers";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { Copy, PlusCircle, Settings2, Trash2 } from "lucide-react";
+import { Copy, KeyRound, PlusCircle, Settings2, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
@@ -829,6 +830,16 @@ export default function IdentityProvidersTable({
         columns={columns}
         data={providers ?? []}
         searchPlaceholder={"Search by name or issuer..."}
+        getStartedCard={
+          <NoResults
+            className={"py-4"}
+            title={"No identity providers"}
+            description={
+              "Add an OIDC or LDAP provider to let your users sign in with their existing accounts."
+            }
+            icon={<KeyRound size={20} className={"text-nb-gray-300"} />}
+          />
+        }
         rightSide={() =>
           permission.identity_providers?.create ? (
             <Button variant={"primary"} onClick={() => setCreateOpen(true)}>
