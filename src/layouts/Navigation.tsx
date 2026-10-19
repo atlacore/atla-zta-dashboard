@@ -7,7 +7,9 @@ import AccessControlIcon from "@/assets/icons/AccessControlIcon";
 import ControlCenterIcon from "@/assets/icons/ControlCenterIcon";
 import DNSIcon from "@/assets/icons/DNSIcon";
 import DocsIcon from "@/assets/icons/DocsIcon";
+import IntegrationIcon from "@/assets/icons/IntegrationIcon";
 import PeerIcon from "@/assets/icons/PeerIcon";
+import SettingsIcon from "@/assets/icons/SettingsIcon";
 import SetupKeysIcon from "@/assets/icons/SetupKeysIcon";
 import TeamIcon from "@/assets/icons/TeamIcon";
 import SidebarItem from "@/components/SidebarItem";
@@ -165,12 +167,6 @@ export default function Navigation({
                     href={"/tenants"}
                     visible={permission.policies.read}
                   />
-                  <SidebarItem
-                    label="Identity Providers"
-                    isChild
-                    href={"/identity-providers"}
-                    visible={permission.identity_providers.read}
-                  />
                 </SidebarItem>
 
                 <NetworkNavigation />
@@ -224,6 +220,18 @@ export default function Navigation({
               </SidebarItemGroup>
 
               <SidebarItemGroup>
+                <SidebarItem
+                  icon={<SettingsIcon />}
+                  label="Settings"
+                  href={"/settings"}
+                  visible={permission.settings.read}
+                />
+                <SidebarItem
+                  icon={<IntegrationIcon />}
+                  label="Integrations"
+                  href={"/integrations"}
+                  visible={permission.identity_providers.read}
+                />
                 <SidebarItem
                   icon={<DocsIcon />}
                   href={config.docsUrl}
