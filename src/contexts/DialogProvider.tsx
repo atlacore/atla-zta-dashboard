@@ -31,6 +31,16 @@ type DialogOptions = {
   center?: boolean;
 };
 
+// The title sits beside the icon at about 10px a character. Widen the dialog for longer titles
+// instead of letting them wrap mid-word; full class names so Tailwind keeps them.
+function widthClassForTitle(title: DialogOptions["title"]): string {
+  const length = typeof title === "string" ? title.length : 0;
+  if (length > 42) return "max-w-[640px]";
+  if (length > 34) return "max-w-[560px]";
+  if (length > 24) return "max-w-[480px]";
+  return "max-w-[400px]";
+}
+
 export default function DialogProvider({ children }: Props) {
   const [state, setState] = useState({
     isOpen: false,
@@ -66,7 +76,9 @@ export default function DialogProvider({ children }: Props) {
       >
         {dialogOptions && (
           <ModalContent
-            maxWidthClass={dialogOptions.maxWidthClass || "max-w-[400px]"}
+            maxWidthClass={
+              dialogOptions.maxWidthClass || widthClassForTitle(dialogOptions.title)
+            }
             showClose={false}
             onInteractOutside={(e) => e.preventDefault()}
             onPointerDownOutside={(e) => e.preventDefault()}
