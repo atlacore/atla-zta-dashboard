@@ -7,6 +7,7 @@ import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
 import Button from "@components/Button";
 import { InstallClientButton } from "@components/ui/InstallClientButton";
+import NoResults from "@components/ui/NoResults";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
@@ -37,6 +38,9 @@ export default function DevicesTable({
   const { users } = useUsers();
   const { confirm } = useDialog();
   const deviceRequest = useApiCall<{ status: string }>("/ui/devices");
+  // Also refreshes filtered lists such as /ui/devices?user_id=<id>.
+  const refreshDevices = () =>
+    mutate((key) => typeof key === "string" && key.startsWith("/ui/devices"));
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
@@ -61,7 +65,7 @@ export default function DevicesTable({
 
     const promise = deviceRequest
       .del(undefined, `/${device.id}`)
-      .then(() => mutate("/ui/devices"));
+      .then(refreshDevices);
     notify({
       title: "Revoke Device",
       description: `Device '${device.deviceId}' successfully revoked.`,
@@ -156,6 +160,16 @@ export default function DevicesTable({
       columns={columns}
       data={devices ?? []}
       searchPlaceholder={"Search by device ID..."}
+      getStartedCard={
+        <NoResults
+          className={"py-4"}
+          title={"No enrolled devices"}
+          description={
+            "Devices appear here once the ATLA client is installed and registers on a machine."
+          }
+          icon={<Laptop size={20} className={"text-nb-gray-300"} />}
+        />
+      }
       rightSide={() => <InstallClientButton />}
     >
       {(table) => (
@@ -163,7 +177,7 @@ export default function DevicesTable({
           <DataTableRowsPerPage table={table} disabled={!devices?.length} />
           <DataTableRefreshButton
             isDisabled={!devices?.length}
-            onClick={() => mutate("/ui/devices")}
+            onClick={refreshDevices}
           />
         </>
       )}

@@ -12,6 +12,8 @@ export interface User {
   id: string;
   tenantId: string;
   extSub: string;
+  /** Set for users who signed in through an identity provider, absent for local accounts. */
+  identityProviderId?: string;
   email?: string;
   /** Preferred display name — use this. */
   displayName?: string;

@@ -2,6 +2,7 @@
 export interface SDKKey {
   id: string;
   name: string;
+  createdBy: string;
   lastUsedAt?: string;
   expiresAt?: string;
   createdAt: string;
