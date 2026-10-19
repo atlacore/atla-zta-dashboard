@@ -1,5 +1,6 @@
 "use client";
 import { TableContentSkeleton } from "@components/skeletons/SkeletonTable";
+import { InboxIcon } from "lucide-react";
 import DataTableGlobalSearch from "@components/table/DataTableGlobalSearch";
 import { DataTableHeadingPortal } from "@components/table/DataTableHeadingPortal";
 import { DataTablePagination } from "@components/table/DataTablePagination";
@@ -491,7 +492,14 @@ export function DataTable<TData, TValue>({
           {isLoading ? (
             <TableContentSkeleton />
           ) : !hasInitialData && !hasServerSideFilters ? (
-            getStartedCard
+            (getStartedCard ?? (
+              <NoResults
+                className={"py-4"}
+                title={`No ${text.toLowerCase()} yet`}
+                description={"There is nothing to show here yet."}
+                icon={<InboxIcon size={20} className={"text-nb-gray-300"} />}
+              />
+            ))
           ) : (
             <TableComponent
               className={cn("relative mt-6", tableClassName)}
