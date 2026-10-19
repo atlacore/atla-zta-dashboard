@@ -20,6 +20,8 @@ interface Props {
   disabled?: boolean;
   popoverWidth?: "auto" | number;
   options: UserSelectOption[];
+  /** Lists the "All Users" entry first, turn it off where only the given options make sense. */
+  showAllUsers?: boolean;
 }
 
 export type UserSelectOption = {
@@ -29,9 +31,13 @@ export type UserSelectOption = {
   external?: boolean;
 };
 
+// The activity table labels events without an initiator with the email "System".
+const isSystemOption = (item?: { id?: string; name?: string; email?: string }) =>
+  isSystemUser(item) || (!item?.id && item?.email === "System");
+
 const searchPredicate = (item: UserSelectOption, query: string) => {
   const lowerCaseQuery = query.toLowerCase();
-  if (isSystemUser(item) && "system".includes(lowerCaseQuery)) return true;
+  if (isSystemOption(item) && "system".includes(lowerCaseQuery)) return true;
   if (item.name.toLowerCase().includes(lowerCaseQuery)) return true;
   if (item.email?.toLowerCase().includes(lowerCaseQuery)) return true;
   return item.id.toLowerCase().startsWith(lowerCaseQuery);
@@ -43,13 +49,16 @@ export function UsersDropdownSelector({
   disabled = false,
   popoverWidth = 250,
   options,
+  showAllUsers = true,
 }: Readonly<Props>) {
   const [filteredItems, search, setSearch] = useSearch(
-    options.concat({
-      id: "all-users",
-      name: "All Users",
-      email: "Include all users",
-    }),
+    showAllUsers
+      ? options.concat({
+          id: "all-users",
+          name: "All Users",
+          email: "Include all users",
+        })
+      : options,
     searchPredicate,
     { filter: true, debounce: 150 },
   );
@@ -113,7 +122,7 @@ export function UsersDropdownSelector({
                   }
                   style={{
                     color:
-                      isSystemUser(selectedUser)
+                      isSystemOption(selectedUser)
                         ? "#808080"
                         : generateColorFromString(
                             selectedUser?.name ||
@@ -122,7 +131,7 @@ export function UsersDropdownSelector({
                           ),
                   }}
                 >
-                  {isSystemUser(selectedUser) ? (
+                  {isSystemOption(selectedUser) ? (
                     <Cog size={12} />
                   ) : (
                     selectedUser?.name?.charAt(0) || selectedUser?.id?.charAt(0)
@@ -131,7 +140,7 @@ export function UsersDropdownSelector({
                 <div className={"flex items-center gap-2"}>
                   <TextWithTooltip
                     text={
-                      isSystemUser(selectedUser)
+                      isSystemOption(selectedUser)
                         ? "System"
                         : selectedUser?.name
                     }
@@ -195,7 +204,7 @@ export function UsersDropdownSelector({
                 toggle(item.email);
               }}
               renderItem={(user) => {
-                const isSystem = isSystemUser(user);
+                const isSystem = isSystemOption(user);
 
                 return (
                   <div className={"flex items-center gap-2 w-full"}>
@@ -209,9 +218,9 @@ export function UsersDropdownSelector({
                       </div>
                     ) : (
                       <SmallUserAvatar
-                        name={user?.name}
-                        email={user?.email}
-                        id={user?.id}
+                        name={isSystem ? undefined : user?.name}
+                        email={isSystem ? undefined : user?.email}
+                        id={isSystem ? undefined : user?.id}
                       />
                     )}
 
@@ -234,7 +243,7 @@ export function UsersDropdownSelector({
                         }
                       >
                         <TextWithTooltip
-                          text={user?.email || "ATLA ZTA"}
+                          text={(!isSystem && user?.email) || "ATLA ZTA"}
                           maxChars={20}
                         />
                       </span>

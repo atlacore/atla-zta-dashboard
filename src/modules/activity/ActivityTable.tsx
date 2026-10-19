@@ -14,6 +14,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { DateRange } from "react-day-picker";
 import PeerIcon from "@/assets/icons/PeerIcon";
+import { useUsers } from "@/contexts/UsersProvider";
 import { ActivityEvent } from "@/interfaces/ActivityEvent";
 import { ActivityEntryRow } from "@/modules/activity/ActivityEntryRow";
 import { ActivityEventCodeSelector } from "@/modules/activity/ActivityEventCodeSelector";
@@ -32,6 +33,14 @@ type Props = {
   onDateRangeChange?: (range: DateRange | undefined) => void;
   /** Called when the user clicks the refresh button. */
   onRefresh?: () => void;
+  /** Replaces the default "Get Started" card shown when there are no events. */
+  getStartedCard?: React.ReactNode;
+  /** Pre-selects the "Users" filter, by the label shown in it (the user's email). */
+  initialUser?: string;
+  /** Keeps persisted table state (filters, page size) separate per screen or subject. */
+  uniqueKey?: string;
+  /** Drops the "All Users" entry from the user filter, only users present in the events are offered. */
+  hideAllUsersOption?: boolean;
 };
 
 const ActivityFeedColumnsTable: ColumnDef<ActivityEvent>[] = [
@@ -79,13 +88,35 @@ const defaultFromDate = dayjs().subtract(14, "day").toDate();
 const defaultToDate = dayjs().toDate();
 
 export default function ActivityTable({
-  events,
+  events: rawEvents,
   isLoading,
   headingTarget,
   dateRange,
   onDateRangeChange,
   onRefresh,
+  getStartedCard,
+  initialUser,
+  uniqueKey,
+  hideAllUsersOption = false,
 }: Props) {
+  const { users } = useUsers();
+
+  // The backend only sends initiator ids, resolve them so the user filter has something to match.
+  const events = useMemo(
+    () =>
+      rawEvents?.map((event) => {
+        const initiator = users?.find((u) => u.id === event.initiator_id);
+        if (!initiator) return event;
+        const label = initiator.email || initiator.displayName || initiator.id;
+        return {
+          ...event,
+          initiator_email: label,
+          initiator_name: initiator.displayName || label,
+        };
+      }),
+    [rawEvents, users],
+  );
+
   // Default sorting state of the table
   const [sorting, setSorting] = useState<SortingState>([
     {
@@ -123,6 +154,10 @@ export default function ActivityTable({
       paginationClassName={"max-w-[800px]"}
       as={"div"}
       text={"Audit Events"}
+      uniqueKey={uniqueKey}
+      initialFilters={
+        initialUser ? [{ id: "initiator_email", value: initialUser }] : undefined
+      }
       sorting={sorting}
       setSorting={setSorting}
       wrapperClassName={"gap-0 flex flex-col"}
@@ -138,6 +173,7 @@ export default function ActivityTable({
         initiator_email: false,
       }}
       getStartedCard={
+        getStartedCard ?? (
         <GetStartedTest
           icon={
             <SquareIcon
@@ -165,6 +201,7 @@ export default function ActivityTable({
             </>
           }
         />
+        )
       }
       onFilterReset={() => {
         const date = { from: defaultFromDate, to: defaultToDate };
@@ -203,6 +240,7 @@ export default function ActivityTable({
             {events && (
               <UsersDropdownSelector
                 options={userSelectOptions}
+                showAllUsers={!hideAllUsersOption}
                 value={
                   (table
                     .getColumn("initiator_email")
