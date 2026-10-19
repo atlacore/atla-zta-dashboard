@@ -14,13 +14,18 @@ import useRedirect from "@hooks/useRedirect";
 import useFetchApi, { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
 import {
-  CalendarDays,
+  ArrowLeftRight,
+  CalendarClock,
+  CalendarPlus,
+  CalendarX,
   Ghost,
   Globe,
+  Laptop,
   MapPin,
   NetworkIcon,
   ServerIcon,
   ShieldX,
+  User2,
   Wifi,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
@@ -122,16 +127,14 @@ function PeerOverview({
         <PeerSessionHeader session={session} refresh={refresh} />
       </div>
 
-      <div
-        className={
-          "px-8 flex-wrap xl:flex-nowrap flex gap-10 w-full items-start max-w-6xl"
-        }
-      >
-        <SessionInformationCard session={session} />
-        <div className={"flex flex-col gap-8 lg:w-1/2 transition-all"}>
-          <PostureCacheCard deviceId={session.deviceId} />
-          <AllowedIPsCard session={session} />
-          <EdgeNodesCard session={session} />
+      <div className={"px-8 pb-10"}>
+        <div className={"grid grid-cols-1 xl:grid-cols-2 gap-10 max-w-6xl items-start"}>
+          <SessionInformationCard session={session} />
+          <div className={"flex flex-col gap-8 min-w-0"}>
+            <AllowedIPsCard session={session} />
+            <PostureCacheCard deviceId={session.deviceId} />
+            <EdgeNodesCard session={session} />
+          </div>
         </div>
       </div>
     </PageContainer>
@@ -158,7 +161,7 @@ function PeerSessionHeader({
   };
 
   return (
-    <div className={"flex justify-between max-w-6xl items-start"}>
+    <div className={"flex justify-between gap-6 max-w-6xl items-start"}>
       <div>
         <div className={"flex items-center gap-3"}>
           <h1 className={"flex items-center gap-3"}>
@@ -196,7 +199,7 @@ function SessionInformationCard({
   );
 
   return (
-    <Card className={"w-full xl:w-1/2"}>
+    <Card className={"w-full"}>
       <Card.List>
         <Card.ListItem
           copy
@@ -226,7 +229,7 @@ function SessionInformationCard({
         <Card.ListItem
           label={
             <>
-              <Globe size={16} />
+              <User2 size={16} />
               User
             </>
           }
@@ -235,7 +238,7 @@ function SessionInformationCard({
         <Card.ListItem
           label={
             <>
-              <ServerIcon size={16} />
+              <Globe size={16} />
               Region
             </>
           }
@@ -244,7 +247,7 @@ function SessionInformationCard({
         <Card.ListItem
           label={
             <>
-              <ServerIcon size={16} />
+              <ArrowLeftRight size={16} />
               Transport
             </>
           }
@@ -257,7 +260,7 @@ function SessionInformationCard({
             copyText={"Device ID"}
             label={
               <>
-                <ServerIcon size={16} />
+                <Laptop size={16} />
                 Device ID
               </>
             }
@@ -268,7 +271,7 @@ function SessionInformationCard({
         <Card.ListItem
           label={
             <>
-              <CalendarDays size={16} />
+              <CalendarPlus size={16} />
               Created
             </>
           }
@@ -277,7 +280,7 @@ function SessionInformationCard({
         <Card.ListItem
           label={
             <>
-              <CalendarDays size={16} />
+              <CalendarClock size={16} />
               Expires
             </>
           }
@@ -287,7 +290,7 @@ function SessionInformationCard({
           <Card.ListItem
             label={
               <>
-                <CalendarDays size={16} />
+                <CalendarX size={16} />
                 Revoked
               </>
             }
@@ -307,7 +310,7 @@ function AllowedIPsCard({ session }: Readonly<{ session: PeerSession }>) {
         CIDRs granted to this session, accreted from every access-policy
         connect grant.
       </HelpText>
-      <Card>
+      <Card className={"w-full"}>
         {session.allowedIps?.length ? (
           <ul className={"flex flex-col divide-y dark:divide-nb-gray-900"}>
             {session.allowedIps.map((cidr) => (
@@ -343,7 +346,7 @@ function EdgeNodesCard({ session }: Readonly<{ session: PeerSession }>) {
     <div>
       <Label>Edge Nodes</Label>
       <HelpText>Edges this session is pinned to.</HelpText>
-      <Card>
+      <Card className={"w-full"}>
         <ul className={"flex flex-col divide-y dark:divide-nb-gray-900"}>
           {pinnedEdges.map((edge) => (
             <li
