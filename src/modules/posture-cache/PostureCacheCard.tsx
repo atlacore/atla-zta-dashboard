@@ -1,5 +1,7 @@
 "use client";
 
+import HelpText from "@components/HelpText";
+import { Label } from "@components/Label";
 import useFetchApi from "@utils/api";
 import { CheckCircle2, ShieldAlertIcon, ShieldCheckIcon, XCircle } from "lucide-react";
 import React from "react";
@@ -83,25 +85,27 @@ export default function PostureCacheCard({ deviceId }: Props) {
   if (!deviceId) return null;
 
   return (
-    <div
-      className={
-        "border border-nb-gray-900 rounded-md bg-nb-gray-940/40 p-4 text-sm"
-      }
-    >
-      <div className={"flex items-center gap-2 mb-1"}>
-        <ShieldCheckIcon size={16} className={"text-nb-gray-300"} />
-        <span className={"font-medium"}>Device posture</span>
+    <div>
+      <Label>Device posture</Label>
+      <HelpText>
+        Health of this device as reported by external providers (MDM, EDR),
+        refreshed every 5 minutes.
+      </HelpText>
+      <div
+        className={
+          "border border-nb-gray-900 rounded-md bg-nb-gray-940 p-4 text-sm"
+        }
+      >
+        {isLoading && <div className={"text-nb-gray-300"}>Loading…</div>}
+        {!isLoading && !data?.length && (
+          <div className={"text-nb-gray-300"}>
+            No external posture data, the worker may not have synced this
+            device yet.
+          </div>
+        )}
+        {!isLoading &&
+          data?.map((entry) => <ProviderScore key={entry.id} entry={entry} />)}
       </div>
-
-      {isLoading && <div className={"text-nb-gray-300 mt-2"}>Loading…</div>}
-      {!isLoading && !data?.length && (
-        <div className={"text-nb-gray-300 mt-2"}>
-          No external posture data — the worker may not have synced this device
-          yet.
-        </div>
-      )}
-      {!isLoading &&
-        data?.map((entry) => <ProviderScore key={entry.id} entry={entry} />)}
     </div>
   );
 }

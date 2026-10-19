@@ -515,6 +515,7 @@ export function DataTable<TData, TValue>({
                             key={header.id}
                             minimal={minimal}
                             inset={inset}
+                            className={header.column.columnDef.meta?.className}
                           >
                             {header.isPlaceholder
                               ? null
@@ -574,7 +575,11 @@ export function DataTable<TData, TValue>({
                           {row.getVisibleCells().map((cell) => (
                             <TableCellComponent
                               key={cell.id}
-                              className={cn("relative", tableCellClassName)}
+                              className={cn(
+                                "relative",
+                                tableCellClassName,
+                                cell.column.columnDef.meta?.className,
+                              )}
                               minimal={minimal}
                               inset={inset}
                               onClick={() => {
