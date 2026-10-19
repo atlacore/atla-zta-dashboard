@@ -42,7 +42,12 @@ function RevokeButton({
   if (!permission.peers?.delete) return null;
 
   return (
-    <Button variant={"danger-outline"} className={"!px-3"} onClick={revoke}>
+    <Button
+      variant={"danger-outline"}
+      className={"!px-3"}
+      onClick={revoke}
+      tooltip={"Revoke session"}
+    >
       <ShieldX size={14} />
     </Button>
   );
