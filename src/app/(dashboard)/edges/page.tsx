@@ -15,9 +15,10 @@ import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { cn } from "@utils/helpers";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { ActivityIcon, ServerIcon, ShieldX } from "lucide-react";
+import { ActivityIcon, Ghost, ServerIcon, ShieldX } from "lucide-react";
 import React, { Suspense } from "react";
 import { useSWRConfig } from "swr";
+import WireGuardIcon from "@/assets/icons/WireGuardIcon";
 import { useDialog } from "@/contexts/DialogProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
@@ -28,18 +29,71 @@ dayjs.extend(relativeTime);
 // ── Types ─────────────────────────────────────────────────────────────────────
 // Matches schemas.EdgeNode JSON output (snake_case field tags).
 
+type Transport = "wireguard" | "reality";
+
 interface EdgeNode {
   id: string;
   edge_id: string;
   region: string;
   host: string;
   public_key: string;
+  /** First entry of `transports`, the edge's default carrier. */
+  transport: Transport;
+  /** Every carrier the edge actually runs. */
+  transports?: Transport[];
   wg_port: number;
+  reality_port?: number;
   cpu_usage: number;
   mem_usage: number;
   latency_ms: number;
   last_seen: string;
   created_at: string;
+}
+
+// ── Transports ────────────────────────────────────────────────────────────────
+
+const TRANSPORT_LABEL: Record<Transport, string> = {
+  wireguard: "WireGuard",
+  reality: "Xray (REALITY)",
+};
+
+// Every carrier the edge runs with its listen port, the first one is the default.
+function EdgeTransports({ edge }: Readonly<{ edge: EdgeNode }>) {
+  const transports: Transport[] = edge.transports?.length
+    ? edge.transports
+    : [edge.transport || "wireguard"];
+
+  return (
+    <div className={"flex gap-2"}>
+      {transports.map((kind, index) => {
+        const port = kind === "reality" ? edge.reality_port : edge.wg_port;
+        return (
+          <span
+            key={kind}
+            title={index === 0 ? "Default transport" : undefined}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs leading-none whitespace-nowrap",
+              index === 0
+                ? "border-nb-gray-700 bg-nb-gray-900 text-nb-gray-100"
+                : "border-nb-gray-900 bg-nb-gray-930/60 text-nb-gray-300",
+            )}
+          >
+            {kind === "reality" ? (
+              <Ghost size={12} className={"shrink-0"} />
+            ) : (
+              <WireGuardIcon size={12} className={"shrink-0"} />
+            )}
+            <span>
+              {TRANSPORT_LABEL[kind] ?? kind}
+              {port ? (
+                <span className={"font-mono text-nb-gray-400"}>:{port}</span>
+              ) : null}
+            </span>
+          </span>
+        );
+      })}
+    </div>
+  );
 }
 
 // ── Metric bar ────────────────────────────────────────────────────────────────
@@ -119,7 +173,12 @@ function RevokeButton({
   if (!permission.edges?.delete) return null;
 
   return (
-    <Button variant={"danger-outline"} className={"!px-3"} onClick={revoke}>
+    <Button
+      variant={"danger-outline"}
+      className={"!px-3"}
+      onClick={revoke}
+      tooltip={"Revoke edge"}
+    >
       <ShieldX size={14} />
     </Button>
   );
@@ -149,6 +208,7 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>Node</DataTableHeader>
       ),
       sortingFn: "text",
+      meta: { className: "w-[12%] whitespace-nowrap" },
       cell: ({ row }) => (
         <div className="flex items-center gap-3 py-1">
           <EdgeStatusDot lastSeen={row.original.last_seen} />
@@ -157,7 +217,7 @@ function EdgeNodesTable({
               {row.original.edge_id || row.original.id}
             </p>
             <p className="text-xs text-nb-gray-500 font-mono mt-0.5">
-              {row.original.host}:{row.original.wg_port}
+              {row.original.host}
             </p>
           </div>
         </div>
@@ -169,9 +229,21 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>Region</DataTableHeader>
       ),
       sortingFn: "text",
+      meta: { className: "w-[8%]" },
       cell: ({ row }) => (
         <span className="text-sm text-nb-gray-300">{row.original.region}</span>
       ),
+    },
+    {
+      id: "transports",
+      accessorFn: (edge) => (edge.transports?.length ? edge.transports : [edge.transport]).join(", "),
+      header: ({ column }) => (
+        <DataTableHeader column={column}>Transports</DataTableHeader>
+      ),
+      sortingFn: "text",
+      // Fit the content, the spare width goes to the metric columns instead.
+      meta: { className: "w-px whitespace-nowrap" },
+      cell: ({ row }) => <EdgeTransports edge={row.original} />,
     },
     {
       accessorKey: "cpu_usage",
@@ -179,6 +251,7 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>CPU</DataTableHeader>
       ),
       sortingFn: "basic",
+      meta: { className: "w-[18%]" },
       cell: ({ row }) => <MetricBar value={row.original.cpu_usage} />,
     },
     {
@@ -187,6 +260,7 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>Memory</DataTableHeader>
       ),
       sortingFn: "basic",
+      meta: { className: "w-[18%]" },
       cell: ({ row }) => <MetricBar value={row.original.mem_usage} />,
     },
     {
@@ -195,6 +269,7 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>Latency</DataTableHeader>
       ),
       sortingFn: "basic",
+      meta: { className: "w-[8%] whitespace-nowrap" },
       cell: ({ row }) => {
         const ms = row.original.latency_ms;
         const color =
@@ -212,6 +287,7 @@ function EdgeNodesTable({
         <DataTableHeader column={column}>Last Seen</DataTableHeader>
       ),
       sortingFn: "datetime",
+      meta: { className: "w-[10%] whitespace-nowrap" },
       cell: ({ row }) => (
         <span
           className="text-sm text-nb-gray-400"
@@ -224,6 +300,7 @@ function EdgeNodesTable({
     {
       id: "actions",
       header: "",
+      meta: { className: "w-px" },
       cell: ({ row }) => (
         <div className="flex justify-end pr-4">
           <RevokeButton edge={row.original} onRevoked={() => mutate("/ui/edges")} />
