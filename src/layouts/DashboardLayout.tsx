@@ -2,6 +2,7 @@
 
 import "../app/globals.css";
 import Button from "@components/Button";
+import SupportWidget from "@components/support/SupportWidget";
 import { UserAvatar } from "@components/ui/UserAvatar";
 import { cn } from "@utils/helpers";
 import { useIsSm, useIsXs } from "@utils/responsive";
@@ -58,6 +59,7 @@ function DashboardPageContent({
   const navOpenPageWidth = isSm ? "45%" : isXs ? "60%" : "80%";
 
   return (
+    <>
     <div className={cn("flex flex-col h-screen", mobileNavOpen && "flex")}>
       {mobileNavOpen && (
         <motion.div
@@ -140,5 +142,7 @@ function DashboardPageContent({
         </div>
       )}
     </div>
+    <SupportWidget />
+    </>
   );
 }

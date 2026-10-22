@@ -21,7 +21,8 @@ import { headerHeight } from "@/layouts/Header";
 import { NetworkNavigation } from "@/modules/networks/misc/NetworkNavigation";
 import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { SmallBadge } from "@components/ui/SmallBadge";
-import { BoxIcon, Laptop, NetworkIcon, ServerIcon } from "lucide-react";
+import { BookOpen, BoxIcon, Laptop, LifeBuoy, NetworkIcon, ServerIcon } from "lucide-react";
+import { useSupportEnabled } from "@/hooks/useSupportEnabled";
 import * as React from "react";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
 
@@ -39,6 +40,7 @@ export default function Navigation({
   const { bannerHeight } = useAnnouncement();
   const { isNavigationCollapsed } = useApplicationContext();
   const { permission, isRestricted } = usePermissions();
+  const supportEnabled = useSupportEnabled();
   const { loggedInUser } = useLoggedInUser();
 
   return (
@@ -231,6 +233,18 @@ export default function Navigation({
                   label="Integrations"
                   href={"/integrations"}
                   visible={permission.identity_providers.read}
+                />
+                <SidebarItem
+                  icon={<BookOpen size={16} />}
+                  label="Help"
+                  href={"/help"}
+                  visible={supportEnabled}
+                />
+                <SidebarItem
+                  icon={<LifeBuoy size={16} />}
+                  label="Tickets"
+                  href={"/tickets"}
+                  visible={supportEnabled}
                 />
                 <SidebarItem
                   icon={<DocsIcon />}

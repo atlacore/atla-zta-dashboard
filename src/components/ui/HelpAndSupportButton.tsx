@@ -11,8 +11,10 @@ import {
 } from "@components/DropdownMenu";
 import {
   ArrowUpRightIcon,
+  BookOpen,
   BookText,
   CircleQuestionMark,
+  LifeBuoy,
   MailIcon,
   MessageSquareShare,
   MessagesSquareIcon,
@@ -24,11 +26,13 @@ import { cn } from "@utils/helpers";
 import SlackIcon from "@/assets/icons/SlackIcon";
 import loadConfig from "@utils/config";
 import { isNetBirdHosted } from "@utils/netbird";
+import { useSupportEnabled } from "@/hooks/useSupportEnabled";
 
 const config = loadConfig();
 
 export default function HelpAndSupportButton() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const supportEnabled = useSupportEnabled();
 
   return (
     <DropdownMenu
@@ -57,6 +61,22 @@ export default function HelpAndSupportButton() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {supportEnabled && (
+          <DropdownMenuItem href={"/help"}>
+            <div className={"flex gap-3 items-center"}>
+              <BookOpen size={14} />
+              FAQ
+            </div>
+          </DropdownMenuItem>
+        )}
+        {supportEnabled && (
+          <DropdownMenuItem href={"/tickets"}>
+            <div className={"flex gap-3 items-center"}>
+              <LifeBuoy size={14} />
+              My tickets
+            </div>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem
           href={config.docsUrl}
           target="_blank"
