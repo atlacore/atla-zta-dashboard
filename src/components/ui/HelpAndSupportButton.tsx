@@ -15,17 +15,12 @@ import {
   BookText,
   CircleQuestionMark,
   LifeBuoy,
-  MailIcon,
-  MessageSquareShare,
-  MessagesSquareIcon,
-  TriangleAlert,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Button from "@components/Button";
 import { cn } from "@utils/helpers";
-import SlackIcon from "@/assets/icons/SlackIcon";
 import loadConfig from "@utils/config";
-import { isNetBirdHosted } from "@utils/netbird";
 import { useSupportEnabled } from "@/hooks/useSupportEnabled";
 
 const config = loadConfig();
@@ -33,6 +28,7 @@ const config = loadConfig();
 export default function HelpAndSupportButton() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const supportEnabled = useSupportEnabled();
+  const router = useRouter();
 
   return (
     <DropdownMenu
@@ -62,7 +58,7 @@ export default function HelpAndSupportButton() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         {supportEnabled && (
-          <DropdownMenuItem href={"/help"}>
+          <DropdownMenuItem onClick={() => router.push("/help")}>
             <div className={"flex gap-3 items-center"}>
               <BookOpen size={14} />
               FAQ
@@ -70,7 +66,7 @@ export default function HelpAndSupportButton() {
           </DropdownMenuItem>
         )}
         {supportEnabled && (
-          <DropdownMenuItem href={"/tickets"}>
+          <DropdownMenuItem onClick={() => router.push("/tickets")}>
             <div className={"flex gap-3 items-center"}>
               <LifeBuoy size={14} />
               My tickets
@@ -86,77 +82,6 @@ export default function HelpAndSupportButton() {
           <div className={"flex gap-3 items-center"}>
             <BookText size={14} />
             Documentation
-          </div>
-          <DropdownMenuShortcut>
-            <ArrowUpRightIcon size={16} />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          href="https://docs.netbird.io/help/troubleshooting-client"
-          target="_blank"
-          rel="noopener noreferrer"
-          asChild
-        >
-          <div className={"flex gap-3 items-center"}>
-            <TriangleAlert size={14} />
-            Troubleshooting
-          </div>
-          <DropdownMenuShortcut>
-            <ArrowUpRightIcon size={16} />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
-
-        {isNetBirdHosted() && (
-          <DropdownMenuItem href="mailto:support@netbird.io?subject=Support Request">
-            <div className={"flex gap-3 items-center"}>
-              <MailIcon size={14} />
-              support@netbird.io
-            </div>
-          </DropdownMenuItem>
-        )}
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          href="https://forum.netbird.io/"
-          target="_blank"
-          rel="noopener noreferrer"
-          asChild
-        >
-          <div className={"flex gap-3 items-center"}>
-            <MessagesSquareIcon size={14} />
-            NetBird Forum
-          </div>
-          <DropdownMenuShortcut>
-            <ArrowUpRightIcon size={16} />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          href="https://docs.netbird.io/slack-url"
-          target="_blank"
-          rel="noopener noreferrer"
-          asChild
-        >
-          <div className={"flex gap-3 items-center"}>
-            <SlackIcon size={14} />
-            NetBird Slack
-          </div>
-          <DropdownMenuShortcut>
-            <ArrowUpRightIcon size={16} />
-          </DropdownMenuShortcut>
-        </DropdownMenuItem>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          href={"https://forms.gle/TeLw2zrXEdw6RcQ36"}
-          target={"_blank"}
-          rel="noopener noreferrer"
-          asChild
-        >
-          <div className={"flex gap-3 items-center"}>
-            <MessageSquareShare size={14} />
-            Feedback
           </div>
           <DropdownMenuShortcut>
             <ArrowUpRightIcon size={16} />

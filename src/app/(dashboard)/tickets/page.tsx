@@ -22,9 +22,12 @@ import { CheckCheck, LifeBuoy } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useState } from "react";
 import { useSWRConfig } from "swr";
+import AttachmentPicker, { pastedImages } from "@components/support/AttachmentPicker";
+import AttachmentView from "@components/support/AttachmentView";
+import { buildSupportBody, useAttachments } from "@/hooks/useAttachments";
+import { useSupportStatus } from "@/hooks/useSupportEnabled";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import {
-  SupportStatus,
   Ticket,
   TicketCategory,
   TicketStatus,
@@ -90,11 +93,13 @@ function TicketsTable({
           className={"text-left py-1"}
           onClick={() => router.push(`/tickets?id=${row.original.id}`)}
         >
-          <p className={"font-medium text-sm text-nb-gray-100"}>
-            {row.original.subject || `Ticket #${row.original.id}`}
-          </p>
-          <p className={"text-xs text-nb-gray-500 mt-0.5"}>
-            #{row.original.id}
+          <p className={"flex items-baseline gap-2 text-sm"}>
+            <span className={"font-mono text-xs text-nb-gray-500"}>
+              #{row.original.id}
+            </span>
+            <span className={"font-medium text-nb-gray-100"}>
+              {row.original.subject || "Untitled ticket"}
+            </span>
           </p>
         </button>
       ),
@@ -169,7 +174,7 @@ function TicketsList() {
   const { data: tickets, isLoading } = useFetchApi<Ticket[]>(
     "/ui/support/tickets",
     false,
-    true,
+    false,
     true,
     { refreshInterval: LIST_REFRESH_MS },
   );
@@ -211,14 +216,19 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
   const { data: thread, isLoading, error } = useFetchApi<TicketThread>(
     threadKey,
     true,
+    false,
     true,
-    true,
-    { refreshInterval: THREAD_REFRESH_MS },
+    {
+      // A resolved ticket cannot change from the user's side (no reopen), so it is read once.
+      refreshInterval: (data?: TicketThread) =>
+        data?.ticket.status === "resolved" ? 0 : THREAD_REFRESH_MS,
+    },
   );
   const ticketRequest = useApiCall<unknown>(threadKey);
 
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
+  const attachments = useAttachments();
 
   if (isLoading) return <FullScreenLoading />;
 
@@ -237,20 +247,29 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
 
   const { ticket, messages } = thread;
   const isResolved = ticket.status === "resolved";
-  const canSend = reply.trim().length > 0 && !sending;
+  const canSend =
+    (reply.trim().length > 0 || attachments.files.length > 0) && !sending;
 
   const refresh = () => Promise.all([mutate(threadKey), mutate("/ui/support/tickets")]);
 
   const send = async () => {
     setSending(true);
     try {
-      await ticketRequest.post({ content: reply.trim() }, "/messages");
+      await ticketRequest.post(
+        buildSupportBody({ content: reply.trim() }, attachments.files),
+        "/messages",
+      );
       setReply("");
+      attachments.clear();
       await refresh();
-    } catch {
+    } catch (error) {
+      const { code, message } = (error ?? {}) as { code?: number; message?: string };
       notify({
         title: "Reply failed",
-        description: "The message was not sent. Your text is kept, try again.",
+        description:
+          code === 400 || code === 413
+            ? (message ?? "The message was rejected.")
+            : "The message was not sent. Your text is kept, try again.",
         promise: Promise.reject(new Error("send failed")),
         loadingMessage: "Sending...",
       });
@@ -271,7 +290,7 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
 
   return (
     <PageContainer>
-      <div className={"p-default py-6 max-w-3xl"}>
+      <div className={"p-default py-6 max-w-5xl"}>
         <Breadcrumbs>
           <Breadcrumbs.Item
             href={"/tickets"}
@@ -285,23 +304,24 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
           />
         </Breadcrumbs>
 
-        <div className={"flex items-start justify-between gap-4"}>
-          <div>
-            <h1>{ticket.subject || `Ticket #${ticket.id}`}</h1>
-            <div className={"flex items-center gap-3 mt-2"}>
-              <StatusBadge status={ticket.status} />
-              {ticket.category && (
-                <span className={"text-xs text-nb-gray-400"}>
-                  {CATEGORY_LABEL[ticket.category] ?? ticket.category}
-                </span>
-              )}
-              <span className={"text-xs text-nb-gray-500"}>
-                Opened {dayjs(ticket.createdAt).fromNow()}
-              </span>
-            </div>
-          </div>
+        <h1>{ticket.subject || `Ticket #${ticket.id}`}</h1>
+        <div className={"flex flex-wrap items-center gap-3 mt-3"}>
+          <StatusBadge status={ticket.status} />
+          {ticket.category && (
+            <span className={"text-xs text-nb-gray-400"}>
+              {CATEGORY_LABEL[ticket.category] ?? ticket.category}
+            </span>
+          )}
+          <span className={"text-xs text-nb-gray-500"}>
+            Opened {dayjs(ticket.createdAt).fromNow()}
+          </span>
           {!isResolved && (
-            <Button variant={"default-outline"} size={"xs"} onClick={resolve}>
+            <Button
+              variant={"secondaryLighter"}
+              size={"xs"}
+              className={"ml-2"}
+              onClick={resolve}
+            >
               <CheckCheck size={14} />
               Resolve
             </Button>
@@ -322,16 +342,34 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
                 {dayjs(message.createdAt).fromNow()}
               </span>
               {/* Plain text on purpose: Chatwoot content can carry markup. */}
-              <div
-                className={cn(
-                  "rounded-md border px-3 py-2 text-sm whitespace-pre-wrap break-words",
-                  message.fromStaff
-                    ? "border-nb-gray-800 bg-nb-gray-930 text-nb-gray-100"
-                    : "border-nb-gray-700 bg-nb-gray-900 text-nb-gray-100",
-                )}
-              >
-                {message.content}
-              </div>
+              {message.content && (
+                <div
+                  className={cn(
+                    "rounded-md border px-3 py-2 text-sm whitespace-pre-wrap break-words",
+                    message.fromStaff
+                      ? "border-nb-gray-800 bg-nb-gray-930 text-nb-gray-100"
+                      : "border-nb-gray-700 bg-nb-gray-900 text-nb-gray-100",
+                  )}
+                >
+                  {message.content}
+                </div>
+              )}
+              {message.attachments && message.attachments.length > 0 && (
+                <div
+                  className={cn(
+                    "mt-2 flex flex-wrap items-start gap-2",
+                    !message.fromStaff && "justify-end",
+                  )}
+                >
+                  {message.attachments.map((attachment) => (
+                    <AttachmentView
+                      key={attachment.id}
+                      ticketId={ticket.id}
+                      attachment={attachment}
+                    />
+                  ))}
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -347,17 +385,28 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
               maxLength={REPLY_MAX_LENGTH}
               placeholder={"Write a reply…"}
               onChange={(event) => setReply(event.target.value)}
+              onPaste={(event) => {
+                const images = pastedImages(event);
+                if (images.length > 0) attachments.add(images);
+              }}
             />
-            <div className={"flex justify-end"}>
-              <Button
-                variant={"primary"}
-                size={"xs"}
-                disabled={!canSend}
-                onClick={send}
-              >
-                Send reply
-              </Button>
-            </div>
+            <AttachmentPicker
+              files={attachments.files}
+              error={attachments.error}
+              disabled={sending}
+              onAdd={attachments.add}
+              onRemove={attachments.remove}
+              actions={
+                <Button
+                  variant={"primary"}
+                  size={"xs"}
+                  disabled={!canSend}
+                  onClick={send}
+                >
+                  Send reply
+                </Button>
+              }
+            />
           </div>
         )}
       </div>
@@ -369,13 +418,11 @@ function TicketDetail({ ticketId }: Readonly<{ ticketId: string }>) {
 
 function TicketsRoute() {
   const ticketId = useSearchParams().get("id");
-  const { data: status, isLoading } = useFetchApi<SupportStatus>(
-    "/ui/support/status",
-  );
+  const { enabled, isLoading } = useSupportStatus();
 
   if (isLoading) return <FullScreenLoading />;
 
-  if (!status?.enabled) {
+  if (!enabled) {
     return (
       <PageContainer>
         <div className={"p-default py-6"}>

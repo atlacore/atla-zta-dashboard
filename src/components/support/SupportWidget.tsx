@@ -12,6 +12,8 @@ import { LifeBuoy, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
+import AttachmentPicker, { pastedImages } from "@components/support/AttachmentPicker";
+import { buildSupportBody, useAttachments } from "@/hooks/useAttachments";
 import { useSupportEnabled } from "@/hooks/useSupportEnabled";
 import { NewTicket, Ticket, TicketCategory } from "@/interfaces/Support";
 
@@ -35,7 +37,8 @@ export default function SupportWidget() {
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
   const [sending, setSending] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+  const attachments = useAttachments();
 
   if (!enabled) return null;
 
@@ -44,15 +47,18 @@ export default function SupportWidget() {
 
   const submit = async () => {
     setSending(true);
-    setFailed(false);
-    const body: NewTicket = {
+    setFailure(null);
+    const fields: NewTicket = {
       category,
       subject: subject.trim(),
       description: description.trim(),
       page: pathname,
     };
     try {
-      const ticket = await ticketRequest.post(body);
+      const ticket = await ticketRequest.post(
+        buildSupportBody({ ...fields }, attachments.files),
+      );
+      attachments.clear();
       setSubject("");
       setDescription("");
       setCategory("question");
@@ -64,9 +70,14 @@ export default function SupportWidget() {
         loadingMessage: "Sending...",
       });
       mutate("/ui/support/tickets");
-    } catch {
-      // The draft stays in the form so the user can retry.
-      setFailed(true);
+    } catch (error) {
+      // The draft stays in the form so the user can retry; a 4xx message is ours and safe to show.
+      const { code, message } = (error ?? {}) as { code?: number; message?: string };
+      setFailure(
+        code === 400 || code === 413
+          ? (message ?? "The request was rejected.")
+          : "Could not reach support. Your text is kept, try again.",
+      );
     } finally {
       setSending(false);
     }
@@ -88,7 +99,7 @@ export default function SupportWidget() {
           side={"top"}
           align={"end"}
           sideOffset={12}
-          className={"w-[22rem] max-w-[calc(100vw-2rem)] !p-4"}
+          className={"w-[24rem] max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto !p-4"}
         >
           <h3 className={"text-base font-medium text-nb-gray-100"}>
             Contact support
@@ -132,13 +143,20 @@ export default function SupportWidget() {
                 maxLength={DESCRIPTION_MAX_LENGTH}
                 placeholder={"What happened, what did you expect?"}
                 onChange={(event) => setDescription(event.target.value)}
+                onPaste={(event) => {
+                  const images = pastedImages(event);
+                  if (images.length > 0) attachments.add(images);
+                }}
               />
             </div>
-            {failed && (
-              <p className={"text-xs text-red-500"}>
-                Could not reach support. Your text is kept, try again.
-              </p>
-            )}
+            <AttachmentPicker
+              files={attachments.files}
+              error={attachments.error}
+              disabled={sending}
+              onAdd={attachments.add}
+              onRemove={attachments.remove}
+            />
+            {failure && <p className={"text-xs text-red-500"}>{failure}</p>}
             <Button
               variant={"primary"}
               disabled={!canSend}

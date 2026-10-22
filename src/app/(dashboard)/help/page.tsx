@@ -8,13 +8,15 @@ import {
 } from "@components/Accordion";
 import Breadcrumbs from "@components/Breadcrumbs";
 import { Input } from "@components/Input";
+import ArticleContent from "@components/support/ArticleContent";
 import Paragraph from "@components/Paragraph";
 import FullScreenLoading from "@components/ui/FullScreenLoading";
 import useFetchApi from "@utils/api";
 import { cn } from "@utils/helpers";
 import { BookOpen, Search } from "lucide-react";
 import React, { useMemo, useState } from "react";
-import { SupportArticle, SupportStatus } from "@/interfaces/Support";
+import { useSupportStatus } from "@/hooks/useSupportEnabled";
+import { SupportArticle } from "@/interfaces/Support";
 import PageContainer from "@/layouts/PageContainer";
 
 const ALL_CATEGORIES = "";
@@ -32,6 +34,7 @@ function FaqContent() {
   const { data: articles, isLoading, error } = useFetchApi<SupportArticle[]>(
     "/ui/support/faq",
     true,
+    false,
   );
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState(ALL_CATEGORIES);
@@ -67,7 +70,7 @@ function FaqContent() {
 
   return (
     <>
-      <div className={"mt-6 flex flex-col gap-4"}>
+      <div className={"mt-8 flex flex-col gap-5"}>
         <Input
           value={query}
           placeholder={"Search articles…"}
@@ -103,24 +106,30 @@ function FaqContent() {
           Use the support button in the bottom-right corner to ask us directly.
         </Paragraph>
       ) : (
-        <Accordion type={"single"} collapsible className={"mt-6"}>
+        <Accordion
+          type={"single"}
+          collapsible
+          className={"mt-10 flex flex-col gap-3"}
+        >
           {visible.map((article) => (
             <AccordionItem
               key={article.id}
               value={String(article.id)}
-              className={"border-b border-nb-gray-900"}
+              className={cn(
+                "rounded-md border border-nb-gray-900 bg-nb-gray-930/60 transition-colors",
+                "hover:border-nb-gray-800 data-[state=open]:border-nb-gray-800 data-[state=open]:bg-nb-gray-920/60",
+              )}
             >
-              <AccordionTrigger className={"text-sm text-nb-gray-100"}>
+              <AccordionTrigger className={"text-sm text-nb-gray-100 !my-0 px-5 py-4"}>
                 {article.title}
               </AccordionTrigger>
               <AccordionContent>
-                {/* Plain text on purpose: Help Center content is not trusted markup. */}
                 <div
                   className={
-                    "pl-8 pb-4 text-sm text-nb-gray-300 whitespace-pre-wrap break-words"
+                    "mx-5 border-t border-nb-gray-900 pt-5 pb-6 text-sm text-nb-gray-300 break-words [&>*:first-child]:mt-0"
                   }
                 >
-                  {article.content}
+                  <ArticleContent>{article.content}</ArticleContent>
                 </div>
               </AccordionContent>
             </AccordionItem>
@@ -132,14 +141,11 @@ function FaqContent() {
 }
 
 export default function HelpPage() {
-  const { data: status, isLoading } = useFetchApi<SupportStatus>(
-    "/ui/support/status",
-    true,
-  );
+  const { enabled, isLoading } = useSupportStatus();
 
   return (
     <PageContainer>
-      <div className={"p-default py-6 max-w-3xl"}>
+      <div className={"p-default py-6 max-w-6xl"}>
         <Breadcrumbs>
           <Breadcrumbs.Item
             href={"/help"}
@@ -154,7 +160,7 @@ export default function HelpPage() {
         </Paragraph>
         {isLoading ? (
           <FullScreenLoading />
-        ) : status?.enabled ? (
+        ) : enabled ? (
           <FaqContent />
         ) : (
           <Paragraph className={"mt-6"}>

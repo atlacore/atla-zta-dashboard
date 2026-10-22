@@ -20,7 +20,8 @@ type RequestOptions = {
   origin?: string;
   globalParams?: Params;
   ignoreGlobalParams?: boolean;
-  refreshInterval?: number;
+  // A function gets the latest data and returns the delay, 0 stops polling.
+  refreshInterval?: number | ((data: any) => number);
   blob?: boolean;
   shouldRetryOnError?: boolean;
 };
@@ -41,14 +42,16 @@ async function apiRequest<T>(
     options?.ignoreGlobalParams ? undefined : options?.globalParams,
   );
 
+  // FormData must keep the browser-set multipart boundary, so no Content-Type for it.
+  const isForm = typeof FormData !== "undefined" && data instanceof FormData;
   const res = await fetch(`${origin}${newUrl}`, {
     method,
     headers: {
-      "Content-Type": "application/json",
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
       Accept: "application/json",
       ...(token ? { "X-User-Token": token } : {}),
     },
-    body: data !== undefined ? JSON.stringify(data) : undefined,
+    body: isForm ? data : data !== undefined ? JSON.stringify(data) : undefined,
     signal: options?.signal,
   });
 

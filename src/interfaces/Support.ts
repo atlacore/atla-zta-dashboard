@@ -17,12 +17,20 @@ export interface Ticket {
   updatedAt: string;
 }
 
+export interface TicketAttachment {
+  id: number;
+  name: string;
+  kind: "image" | "file";
+  size: number;
+}
+
 export interface TicketMessage {
   id: number;
   content: string;
   fromStaff: boolean;
   sender?: string;
   createdAt: string;
+  attachments?: TicketAttachment[];
 }
 
 export interface TicketThread {
