@@ -51,7 +51,7 @@ export function GroupsProviderContent({ children }: Readonly<ProviderContentProp
     data: rawTenants,
     mutate,
     isLoading,
-  } = useFetchApi<{ id: string; name: string }[]>("/ui/tenants", false, true, permission.groups.read);
+  } = useFetchApi<{ id: string; name: string }[]>("/ui/tenants", false, false, permission.groups.read);
 
   const groupRequest = useApiCall<{ id: string; name: string }>("/ui/tenants", true);
   const [dropdownOptions, setDropdownOptions] = useState<Group[]>([]);
