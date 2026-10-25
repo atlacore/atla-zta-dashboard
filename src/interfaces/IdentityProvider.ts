@@ -88,6 +88,17 @@ export interface IdentityProvider {
   // that one with your users.
   loginUrl: string;
   dashboardLoginUrl: string;
+  // SCIM provisioning, OIDC only: scimBaseUrl is where the IdP sends SCIM
+  // requests; SCIM is on while scimTokenCreatedAt is set.
+  scimBaseUrl?: string;
+  scimTokenCreatedAt?: string;
+}
+
+// SCIMTokenResponse matches schemas.SCIMTokenResponse; the token is shown only once.
+export interface SCIMTokenResponse {
+  token: string;
+  baseUrl: string;
+  createdAt: string;
 }
 
 export interface IdentityProviderCreateRequest {

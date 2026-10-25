@@ -21,6 +21,18 @@ export default function UserStatusCell({ user }: Readonly<Props>) {
     >
       <span className={cn("h-2 w-2 rounded-full", color)} />
       {text}
+      {user.scimUserName && (
+        <span
+          className={
+            "rounded-full border border-nb-gray-800 px-2 py-0.5 text-xs text-nb-gray-400"
+          }
+          title={
+            "Provisioned over SCIM: the identity provider blocks, unblocks and deletes this user"
+          }
+        >
+          SCIM
+        </span>
+      )}
     </div>
   );
 }
