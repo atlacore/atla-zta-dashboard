@@ -21,6 +21,8 @@ export interface User {
   name?: string;
   role: Role;
   isBlocked: boolean;
+  /** Set when the identity provider provisions the user over SCIM; it then blocks, unblocks and deletes them. */
+  scimUserName?: string;
   /** @deprecated use isBlocked */
   is_blocked?: boolean;
   createdAt: string;
