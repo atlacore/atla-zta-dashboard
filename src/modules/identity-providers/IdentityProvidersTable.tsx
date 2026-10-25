@@ -11,7 +11,14 @@ import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { cn } from "@utils/helpers";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { Copy, KeyRound, PlusCircle, Settings2, Trash2 } from "lucide-react";
+import {
+  Copy,
+  KeyRound,
+  PlusCircle,
+  Settings2,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useState } from "react";
 import { useSWRConfig } from "swr";
@@ -27,9 +34,11 @@ import {
   LDAP_TLS_MODES,
   LDAPTLSMode,
   providerIconType,
+  SCIMTokenResponse,
 } from "@/interfaces/IdentityProvider";
 import ActionTooltip from "@components/ActionTooltip";
 import CheckboxField from "@components/CheckboxField";
+import HelpText from "@components/HelpText";
 import FormModal from "@components/modal/FormModal";
 import { Label } from "@components/Label";
 import { Input } from "@components/Input";
@@ -654,6 +663,129 @@ function EditIdentityProviderModal({
   );
 }
 
+// ── SCIM Modal ───────────────────────────────────────────────────────────────
+
+type SCIMModalProps = {
+  provider: IdentityProvider | null;
+  onOpenChange: (v: boolean) => void;
+  onChanged: () => void;
+};
+
+function SCIMModal({ provider, onOpenChange, onChanged }: SCIMModalProps) {
+  const { confirm } = useDialog();
+  const tokenRequest = useApiCall<SCIMTokenResponse>("/ui/identity-providers");
+  const [token, setToken] = useState<string | null>(null);
+
+  // keyed on the id: the row object is replaced on every list refresh
+  React.useEffect(() => setToken(null), [provider?.id]);
+
+  if (!provider) return null;
+  const enabled = !!provider.scimTokenCreatedAt;
+
+  const createToken = async () => {
+    if (enabled) {
+      const choice = await confirm({
+        title: "Replace the SCIM token?",
+        description:
+          "The current token stops working at once: update it in your identity provider right away.",
+        confirmText: "Replace",
+        cancelText: "Cancel",
+        type: "warning",
+      });
+      if (!choice) return;
+    }
+    notify({
+      title: "SCIM Token",
+      description: "New SCIM token created.",
+      promise: tokenRequest
+        .post(undefined, `/${provider.id}/scim-token`)
+        .then((created) => {
+          setToken(created.token);
+          onChanged();
+        }),
+      loadingMessage: "Creating token...",
+    });
+  };
+
+  const turnOff = async () => {
+    const choice = await confirm({
+      title: `Turn off SCIM for '${provider.name}'?`,
+      description:
+        "The identity provider can no longer create, update or deactivate users. Users it provisioned stay as they are.",
+      confirmText: "Turn off",
+      cancelText: "Cancel",
+      type: "danger",
+    });
+    if (!choice) return;
+    notify({
+      title: "SCIM Token",
+      description: "SCIM provisioning turned off.",
+      promise: tokenRequest
+        .del(undefined, `/${provider.id}/scim-token`)
+        .then(() => {
+          setToken(null);
+          onChanged();
+        }),
+      loadingMessage: "Turning off...",
+    });
+  };
+
+  return (
+    <FormModal
+      open={!!provider}
+      onOpenChange={onOpenChange}
+      icon={<Users size={20} />}
+      title={<>SCIM provisioning for {provider.name}</>}
+      description={
+        "Your identity provider creates, updates and deactivates users through SCIM. Groups are not provisioned: they keep coming from the token claims."
+      }
+      footer={
+        enabled ? (
+          <>
+            <Button variant={"danger-outline"} onClick={turnOff}>
+              Turn off
+            </Button>
+            <Button variant={"secondary"} onClick={createToken}>
+              Replace token
+            </Button>
+            <Button variant={"primary"} onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant={"secondary"} onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button variant={"primary"} onClick={createToken}>
+              Create token
+            </Button>
+          </>
+        )
+      }
+    >
+      <div className={"px-8 pb-6 flex flex-col gap-5"}>
+        <CopyField label={"SCIM Base URL"} value={provider.scimBaseUrl ?? ""} />
+        <HelpText>
+          {enabled
+            ? `On since ${dayjs(provider.scimTokenCreatedAt).format(
+                "MMM D, YYYY HH:mm",
+              )}. Deactivating a user in your identity provider blocks them here and ends their sessions.`
+            : "Off. Create a token and enter it with the base URL in your identity provider's provisioning settings."}
+        </HelpText>
+        {token && (
+          <div className={"flex flex-col gap-2"}>
+            <CopyField label={"Bearer Token"} value={token} />
+            <p className={"text-xs text-yellow-400"}>
+              Copy it now: it is not shown again.
+            </p>
+          </div>
+        )}
+      </div>
+    </FormModal>
+  );
+}
+
 // ── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ isActive }: { isActive: boolean }) {
@@ -690,6 +822,9 @@ export default function IdentityProvidersTable({
   const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<IdentityProvider | null>(null);
+  const [scimProviderID, setSCIMProviderID] = useState<string | null>(null);
+  const scimProvider =
+    providers?.find((provider) => provider.id === scimProviderID) ?? null;
   const providerRequest = useApiCall<{ status: string }>(
     "/ui/identity-providers",
   );
@@ -768,6 +903,21 @@ export default function IdentityProvidersTable({
       ),
     },
     {
+      id: "scim",
+      header: ({ column }) => (
+        <DataTableHeader column={column}>SCIM</DataTableHeader>
+      ),
+      cell: ({ row }) => (
+        <span className="text-sm text-nb-gray-300">
+          {row.original.type === "ldap"
+            ? "—"
+            : row.original.scimTokenCreatedAt
+            ? "On"
+            : "Off"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "createdAt",
       header: ({ column }) => (
         <DataTableHeader column={column}>Created</DataTableHeader>
@@ -784,6 +934,17 @@ export default function IdentityProvidersTable({
       header: "",
       cell: ({ row }) => (
         <div className="flex justify-end gap-2 pr-4">
+          {permission.identity_providers?.update &&
+            row.original.type === "oidc" && (
+              <Button
+                variant={"secondary"}
+                className={"!px-3"}
+                onClick={() => setSCIMProviderID(row.original.id)}
+                tooltip={"SCIM provisioning"}
+              >
+                <Users size={14} />
+              </Button>
+            )}
           {permission.identity_providers?.update && (
             <Button
               variant={"secondary"}
@@ -820,6 +981,11 @@ export default function IdentityProvidersTable({
         provider={editing}
         onOpenChange={(v) => !v && setEditing(null)}
         onUpdated={() => mutate("/ui/identity-providers")}
+      />
+      <SCIMModal
+        provider={scimProvider}
+        onOpenChange={(v) => !v && setSCIMProviderID(null)}
+        onChanged={() => mutate("/ui/identity-providers")}
       />
       <DataTable
         headingTarget={headingTarget}
