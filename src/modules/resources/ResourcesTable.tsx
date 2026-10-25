@@ -20,7 +20,13 @@ import {
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import useFetchApi, { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { BoxIcon, PenSquare, PlusCircle, Trash2 } from "lucide-react";
+import {
+  BoxIcon,
+  PenSquare,
+  PlusCircle,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -31,12 +37,17 @@ import CopyToClipboardText from "@components/CopyToClipboardText";
 import { buildResourceArn } from "@/utils/arn";
 import { DNSZone } from "@/interfaces/DNSZone";
 import {
+  DatabasePlugin,
+  DatabasePrivileges,
+  DatabaseSSLMode,
   Resource,
+  ResourceConfig,
   ResourceCreateRequest,
   ResourceCredProfile,
   ResourceKind,
   ResourceUpdateRequest,
 } from "@/interfaces/Resource";
+import CredentialCAsModal from "@/modules/resources/CredentialCAsModal";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,6 +64,38 @@ const CRED_PROFILE_OPTIONS: { value: ResourceCredProfile; label: string }[] = [
   { value: "mtls_cert", label: "mTLS certificate" },
   { value: "db_creds", label: "Database credentials" },
 ];
+
+const DATABASE_PLUGIN_OPTIONS: { value: DatabasePlugin; label: string }[] = [
+  { value: "postgres", label: "PostgreSQL" },
+  { value: "mysql", label: "MySQL" },
+];
+
+const DATABASE_PRIVILEGE_OPTIONS: {
+  value: DatabasePrivileges;
+  label: string;
+}[] = [
+  { value: "readonly", label: "Read only (SELECT)" },
+  {
+    value: "readwrite",
+    label: "Read and write (SELECT, INSERT, UPDATE, DELETE)",
+  },
+];
+
+const SSL_MODE_OPTIONS: DatabaseSSLMode[] = [
+  "require",
+  "verify-full",
+  "disable",
+];
+
+// Logins are POSIX names, the same check the control plane runs
+const SSH_PRINCIPAL_PATTERN = /^[a-z_][a-z0-9_.-]{0,31}$/;
+const DATABASE_NAME_PATTERN = /^[A-Za-z_][A-Za-z0-9_]{0,62}$/;
+
+const parsePrincipals = (value: string) =>
+  value
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
 
 // ── Create Modal ──────────────────────────────────────────────────────────────
 
@@ -76,6 +119,14 @@ function CreateResourceModal({
   const [port, setPort] = useState("");
   const [dnsZoneId, setDnsZoneId] = useState("");
   const [dnsLabel, setDnsLabel] = useState("");
+  const [sshPrincipals, setSSHPrincipals] = useState("");
+  const [dbPlugin, setDbPlugin] = useState<DatabasePlugin>("postgres");
+  const [dbName, setDbName] = useState("");
+  const [dbUsername, setDbUsername] = useState("");
+  const [dbPassword, setDbPassword] = useState("");
+  const [dbPrivileges, setDbPrivileges] =
+    useState<DatabasePrivileges>("readonly");
+  const [dbSSLMode, setDbSSLMode] = useState<DatabaseSSLMode>("require");
   const resourceRequest = useApiCall<Resource>("/ui/resources");
   const { data: zones } = useFetchApi<DNSZone[]>("/ui/dns/zones");
   const activeZones = useMemo(
@@ -100,12 +151,28 @@ function CreateResourceModal({
       region: region.trim(),
       description: description.trim() || undefined,
     };
-    // config is opaque Vault storage - only send it if the operator filled something in
-    if (host.trim() || port.trim()) {
-      body.config = {
-        ...(host.trim() && { host: host.trim() }),
-        ...(port.trim() && { port: Number(port) }),
+    // config is sealed Vault storage - only send it if the operator filled something in
+    const config: ResourceConfig = {
+      ...(host.trim() && { host: host.trim() }),
+      ...(port.trim() && { port: Number(port) }),
+    };
+    if (credProfile === "ssh_cert") {
+      config.ssh_principals = parsePrincipals(sshPrincipals);
+    }
+    if (credProfile === "db_creds") {
+      config.db = {
+        plugin: dbPlugin,
+        database: dbName.trim(),
+        username: dbUsername.trim(),
+        password: dbPassword,
+        privileges: dbPrivileges,
+        ...(dbPlugin === "postgres" && { ssl_mode: dbSSLMode }),
       };
+    }
+    if (Object.keys(config).length > 0) {
+      body.config = config;
+    }
+    if (host.trim()) {
       body.dnsZoneId = dnsZoneId || undefined;
       body.dnsLabel = dnsLabel.trim() || undefined;
     }
@@ -132,10 +199,30 @@ function CreateResourceModal({
     setPort("");
     setDnsZoneId("");
     setDnsLabel("");
+    setSSHPrincipals("");
+    setDbPlugin("postgres");
+    setDbName("");
+    setDbUsername("");
+    setDbPassword("");
+    setDbPrivileges("readonly");
+    setDbSSLMode("require");
     onOpenChange(false);
   };
 
-  const isValid = name.trim() && region.trim();
+  const principals = parsePrincipals(sshPrincipals);
+  const principalsValid =
+    principals.length > 0 &&
+    principals.every((p) => SSH_PRINCIPAL_PATTERN.test(p));
+  const databaseValid =
+    host.trim() !== "" &&
+    port.trim() !== "" &&
+    DATABASE_NAME_PATTERN.test(dbName.trim()) &&
+    dbUsername.trim() !== "" &&
+    dbPassword !== "";
+  const credentialsValid =
+    (credProfile !== "ssh_cert" || principalsValid) &&
+    (credProfile !== "db_creds" || databaseValid);
+  const isValid = name.trim() && region.trim() && credentialsValid;
 
   return (
     <FormModal
@@ -244,6 +331,124 @@ function CreateResourceModal({
             />
           </div>
         </div>
+
+        {credProfile === "ssh_cert" && (
+          <div>
+            <Label>SSH logins</Label>
+            <Input
+              value={sshPrincipals}
+              onChange={(e) => setSSHPrincipals(e.target.value)}
+              placeholder={"e.g. ubuntu, deploy"}
+            />
+            <HelpText>
+              Comma-separated logins every granted user may use. The server must
+              trust the tenant&apos;s SSH CA, see Server Trust.
+            </HelpText>
+          </div>
+        )}
+
+        {credProfile === "mtls_cert" && (
+          <HelpText>
+            Certificates are issued by the tenant&apos;s client CA with the
+            user&apos;s ID as CN. The service must trust that CA, see Server
+            Trust.
+          </HelpText>
+        )}
+
+        {credProfile === "db_creds" && (
+          <div className={"flex flex-col gap-4"}>
+            <HelpText>
+              Vault logs in with this admin account to create a database user
+              per session, so host and port are required and must be reachable
+              from Vault. The account is stored sealed in Vault and never shown
+              again.
+            </HelpText>
+            <div className={"grid grid-cols-2 gap-4"}>
+              <div>
+                <Label>Database engine</Label>
+                <Select
+                  value={dbPlugin}
+                  onValueChange={(v) => setDbPlugin(v as DatabasePlugin)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATABASE_PLUGIN_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Database name</Label>
+                <Input
+                  value={dbName}
+                  onChange={(e) => setDbName(e.target.value)}
+                  placeholder={"e.g. billing"}
+                />
+              </div>
+              <div>
+                <Label>Admin username</Label>
+                <Input
+                  value={dbUsername}
+                  onChange={(e) => setDbUsername(e.target.value)}
+                  placeholder={"e.g. vault_admin"}
+                />
+              </div>
+              <div>
+                <Label>Admin password</Label>
+                <Input
+                  value={dbPassword}
+                  onChange={(e) => setDbPassword(e.target.value)}
+                  type={"password"}
+                />
+              </div>
+              <div className={dbPlugin === "postgres" ? "" : "col-span-2"}>
+                <Label>Privileges</Label>
+                <Select
+                  value={dbPrivileges}
+                  onValueChange={(v) =>
+                    setDbPrivileges(v as DatabasePrivileges)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DATABASE_PRIVILEGE_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {dbPlugin === "postgres" && (
+                <div>
+                  <Label>SSL mode</Label>
+                  <Select
+                    value={dbSSLMode}
+                    onValueChange={(v) => setDbSSLMode(v as DatabaseSSLMode)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SSL_MODE_OPTIONS.map((mode) => (
+                        <SelectItem key={mode} value={mode}>
+                          {mode}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {host.trim() && (
           <div className={"grid grid-cols-2 gap-4"}>
@@ -391,6 +596,17 @@ function EditResourceModal({
               ))}
             </SelectContent>
           </Select>
+          {credProfile !== resource.credProfile &&
+            (credProfile === "ssh_cert" || credProfile === "db_creds") && (
+              <HelpText>
+                The config is set at creation: switching works only if it
+                already has{" "}
+                {credProfile === "ssh_cert"
+                  ? "SSH logins"
+                  : "the database admin account"}
+                . Otherwise create a new resource.
+              </HelpText>
+            )}
         </div>
       </div>
     </FormModal>
@@ -416,6 +632,7 @@ export default function ResourcesTable({
   const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
   const [editResource, setEditResource] = useState<Resource | null>(null);
+  const [trustOpen, setTrustOpen] = useState(false);
   const resourceRequest = useApiCall<Resource>("/ui/resources");
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
@@ -582,6 +799,7 @@ export default function ResourcesTable({
         onOpenChange={setCreateOpen}
         onCreated={() => mutate("/ui/resources")}
       />
+      <CredentialCAsModal open={trustOpen} onOpenChange={setTrustOpen} />
       {editResource && (
         <EditResourceModal
           resource={editResource}
@@ -601,14 +819,20 @@ export default function ResourcesTable({
         columns={columns}
         data={resources ?? []}
         searchPlaceholder={"Search by name or ARN..."}
-        rightSide={() =>
-          permission.setup_keys?.create ? (
-            <Button variant={"primary"} onClick={() => setCreateOpen(true)}>
-              <PlusCircle size={16} />
-              Add Resource
+        rightSide={() => (
+          <div className={"flex gap-3"}>
+            <Button variant={"secondary"} onClick={() => setTrustOpen(true)}>
+              <ShieldCheck size={16} />
+              Server Trust
             </Button>
-          ) : null
-        }
+            {permission.setup_keys?.create && (
+              <Button variant={"primary"} onClick={() => setCreateOpen(true)}>
+                <PlusCircle size={16} />
+                Add Resource
+              </Button>
+            )}
+          </div>
+        )}
       >
         {(table) => (
           <>

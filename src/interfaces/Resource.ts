@@ -15,9 +15,36 @@ export interface Resource {
   hostname?: string;
 }
 
+export type DatabasePlugin = "postgres" | "mysql";
+
+export type DatabasePrivileges = "readonly" | "readwrite";
+
+export type DatabaseSSLMode = "disable" | "require" | "verify-full";
+
+/** Admin account Vault uses to create a user per session of a db_creds resource */
+export interface ResourceDatabaseConfig {
+  plugin: DatabasePlugin;
+  database: string;
+  username: string;
+  password: string;
+  privileges: DatabasePrivileges;
+  /** Postgres only, default "require" */
+  ssl_mode?: DatabaseSSLMode;
+}
+
 export interface ResourceConfig {
   host?: string;
   port?: number;
+  /** ssh_cert: the logins every granted user may use on the server */
+  ssh_principals?: string[];
+  /** db_creds: required */
+  db?: ResourceDatabaseConfig;
+}
+
+/** What the tenant's servers trust: its SSH user CA and its client certificate CA */
+export interface CredentialCAs {
+  sshCaPublicKey: string;
+  clientCaPem: string;
 }
 
 export interface ResourceCreateRequest {
