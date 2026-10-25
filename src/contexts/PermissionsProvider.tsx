@@ -41,7 +41,8 @@ export function buildPermissions(role: string | undefined): { isRestricted: bool
       billing: none,
       identity_providers: isAdmin ? full : none,
       edr: rw,
-      event_streaming: rw,
+      // GET /ui/event-streams is owner/admin only: auditors cannot read SIEM destinations
+      event_streaming: isAdmin ? full : none,
       idp: none,
       msp: none,
       tenants: rw,
