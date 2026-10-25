@@ -1,6 +1,6 @@
 "use client";
 
-import { KeyRound, MonitorSmartphone } from "lucide-react";
+import { KeyRound, MonitorSmartphone, RadioTower } from "lucide-react";
 import React from "react";
 import SectionLayout, { SectionLink } from "@/layouts/SectionLayout";
 
@@ -11,6 +11,11 @@ const sections: SectionLink[] = [
     icon: KeyRound,
   },
   { label: "MDM", href: "/integrations/mdm", icon: MonitorSmartphone },
+  {
+    label: "Event Streaming",
+    href: "/integrations/event-streaming",
+    icon: RadioTower,
+  },
 ];
 
 export default function IntegrationsLayout({
