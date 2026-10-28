@@ -33,6 +33,18 @@ export default function UserStatusCell({ user }: Readonly<Props>) {
           SCIM
         </span>
       )}
+      {user.kind === "service" && (
+        <span
+          className={
+            "rounded-full border border-nb-gray-800 px-2 py-0.5 text-xs text-nb-gray-400"
+          }
+          title={
+            "Service user of a setup key: its devices act as it. It cannot sign in; block or delete it to cut all of them off"
+          }
+        >
+          Service
+        </span>
+      )}
     </div>
   );
 }

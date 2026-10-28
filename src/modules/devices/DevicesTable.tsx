@@ -5,6 +5,7 @@ import DataTableHeader from "@components/table/DataTableHeader";
 import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
+import Badge from "@components/Badge";
 import Button from "@components/Button";
 import CheckboxField from "@components/CheckboxField";
 import { InstallClientButton } from "@components/ui/InstallClientButton";
@@ -12,7 +13,7 @@ import NoResults from "@components/ui/NoResults";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { Laptop, Trash2 } from "lucide-react";
+import { CheckCircle2, Laptop, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
@@ -84,6 +85,18 @@ export default function DevicesTable({
     });
   };
 
+  const approve = (device: Device) => {
+    const promise = deviceRequest
+      .post(undefined, `/${device.id}/approve`)
+      .then(refreshDevices);
+    notify({
+      title: "Approve Device",
+      description: `Device '${device.deviceId}' can connect now.`,
+      promise,
+      loadingMessage: "Approving device...",
+    });
+  };
+
   const columns: ColumnDef<Device>[] = useMemo(
     () => [
       {
@@ -110,6 +123,27 @@ export default function DevicesTable({
             {userLabel(row.original.userId)}
           </span>
         ),
+      },
+      {
+        id: "status",
+        accessorFn: (d) => (d.approvedAt ? (d.setupKeyId ? "setup key" : "approved") : "pending"),
+        header: ({ column }) => (
+          <DataTableHeader column={column}>Status</DataTableHeader>
+        ),
+        cell: ({ row }) =>
+          !row.original.approvedAt ? (
+            <Badge variant={"yellow"} size={"xs"}>
+              Waiting for approval
+            </Badge>
+          ) : row.original.setupKeyId ? (
+            <Badge variant={"gray"} size={"xs"}>
+              Setup key
+            </Badge>
+          ) : (
+            <Badge variant={"green"} size={"xs"}>
+              Approved
+            </Badge>
+          ),
       },
       {
         accessorKey: "enrolledAt",
@@ -141,23 +175,35 @@ export default function DevicesTable({
       {
         id: "actions",
         header: "",
-        cell: ({ row }) =>
-          permission.devices?.delete ? (
-            <div className="flex justify-end pr-4">
+        cell: ({ row }) => (
+          <div className="flex justify-end gap-2 pr-4">
+            {permission.devices?.update && !row.original.approvedAt && (
+              <Button
+                variant={"primary"}
+                className={"!px-3"}
+                onClick={() => approve(row.original)}
+                tooltip={"Approve device"}
+              >
+                <CheckCircle2 size={14} />
+                Approve
+              </Button>
+            )}
+            {permission.devices?.delete && (
               <Button
                 variant={"danger-outline"}
                 className={"!px-3"}
                 onClick={() => revoke(row.original)}
-                tooltip={"Revoke device"}
+                tooltip={row.original.approvedAt ? "Revoke device" : "Refuse device"}
               >
                 <Trash2 size={14} />
               </Button>
-            </div>
-          ) : null,
+            )}
+          </div>
+        ),
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [users, permission.devices?.delete],
+    [users, permission.devices?.delete, permission.devices?.update],
   );
 
   return (

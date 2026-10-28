@@ -14,6 +14,7 @@ import PageContainer from "@/layouts/PageContainer";
 
 const ThisBrowserDevice = lazy(() => import("@/modules/devices/ThisBrowserDevice"));
 const DevicesTable = lazy(() => import("@/modules/devices/DevicesTable"));
+const DeviceApprovalSwitch = lazy(() => import("@/modules/devices/DeviceApprovalSwitch"));
 
 export default function Devices() {
   const { data: devices, isLoading, mutate } = useFetchApi<Device[]>("/ui/devices");
@@ -39,6 +40,11 @@ export default function Devices() {
           session already established.
         </Paragraph>
       </div>
+      {permission.devices.update && (
+        <Suspense fallback={null}>
+          <DeviceApprovalSwitch />
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         <ThisBrowserDevice onChanged={() => mutate()} />
       </Suspense>
