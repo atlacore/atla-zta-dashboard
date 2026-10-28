@@ -34,6 +34,7 @@ import PeerIcon from "@/assets/icons/PeerIcon";
 import WireGuardIcon from "@/assets/icons/WireGuardIcon";
 import PeersProvider, { usePeers } from "@/contexts/PeersProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
+import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { useUsers } from "@/contexts/UsersProvider";
 import { PeerSession } from "@/interfaces/Peer";
 import PageContainer from "@/layouts/PageContainer";
@@ -75,11 +76,14 @@ function TransportValue({ transport }: Readonly<{ transport: PeerSession["transp
 export default function PeerPage() {
   const queryParameter = useSearchParams();
   const sessionId = queryParameter.get("id");
+  const { permission } = usePermissions();
+  const { loggedInUser } = useLoggedInUser();
 
   useRedirect("/peers", false, !sessionId);
 
+  // A role that cannot list every peer still opens its own: the list is then filtered to the caller
   return (
-    <PeersProvider>
+    <PeersProvider userId={permission.peers.read ? undefined : loggedInUser?.id}>
       <PeerSessionDetail sessionId={sessionId} />
     </PeersProvider>
   );
@@ -333,14 +337,21 @@ function AllowedIPsCard({ session }: Readonly<{ session: PeerSession }>) {
 }
 
 function EdgeNodesCard({ session }: Readonly<{ session: PeerSession }>) {
-  const { data: edges } = useFetchApi<EdgeNodeSummary[]>("/ui/edges");
+  const { permission } = usePermissions();
+  // Edges are infrastructure; a member opening its own peer does not see them
+  const { data: edges } = useFetchApi<EdgeNodeSummary[]>(
+    "/ui/edges",
+    false,
+    true,
+    permission.edges.read,
+  );
 
   const pinnedEdges = useMemo(
     () => edges?.filter((e) => session.edgeNodeIds?.includes(e.id)) ?? [],
     [edges, session.edgeNodeIds],
   );
 
-  if (!session.edgeNodeIds?.length) return null;
+  if (!permission.edges.read || !session.edgeNodeIds?.length) return null;
 
   return (
     <div>

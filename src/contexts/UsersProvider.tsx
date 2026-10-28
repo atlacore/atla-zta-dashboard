@@ -23,9 +23,23 @@ const UserProfileContext = React.createContext(
   },
 );
 
+// Roles allowed GET /ui/users (users.list in the control plane's role matrix)
+const usersListRoles = new Set(["owner", "admin", "auditor"]);
+
 export default function UsersProvider({ children }: Readonly<Props>) {
+  return (
+    <UserProfileProvider>
+      <UsersListProvider>{children}</UsersListProvider>
+    </UserProfileProvider>
+  );
+}
+
+// The list is only fetched for a role that may read it; a member gets an empty context instead of a 403
+function UsersListProvider({ children }: Readonly<Props>) {
+  const { loggedInUser } = useUserProfile();
+  const canList = usersListRoles.has(loggedInUser?.role ?? "");
   // revalidate=false: list doesn't refetch on focus/reconnect; call refresh() explicitly when needed
-  const { data: users, mutate, isLoading } = useFetchApi<User[]>("/ui/users", false, false);
+  const { data: users, mutate, isLoading } = useFetchApi<User[]>("/ui/users", false, false, canList);
 
   const refresh = () => {
     mutate().then();
@@ -33,7 +47,7 @@ export default function UsersProvider({ children }: Readonly<Props>) {
 
   return (
     <UsersContext.Provider value={{ users, refresh, isLoading }}>
-      <UserProfileProvider>{children}</UserProfileProvider>
+      {children}
     </UsersContext.Provider>
   );
 }

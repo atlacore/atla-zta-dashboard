@@ -247,6 +247,9 @@ function UserPeersTable({
 function UserTabs({ user }: Readonly<{ user: User }>) {
   const [tab, setTab] = useState("peers");
   const { permission } = usePermissions();
+  const { loggedInUser } = useLoggedInUser();
+  // Any role reads its own peers, keys, devices and activity; the control plane allows it for self-filtered lists
+  const isSelf = user.id === loggedInUser?.id;
   const { data: userKeys, isLoading: keysLoading } = useFetchApi<SDKKey[]>(
     `/ui/sdk-keys?created_by=${user.id}`,
   );
@@ -290,7 +293,7 @@ function UserTabs({ user }: Readonly<{ user: User }>) {
       <TabsContent value={"tokens"}>
         <RestrictedAccess
           page={"Access Tokens"}
-          hasAccess={permission.setup_keys.read}
+          hasAccess={isSelf || permission.setup_keys.read}
         >
           <div className={"px-8 pb-6"}>
             <Callout variant={"info"} className={"max-w-3xl items-center"}>
@@ -316,13 +319,13 @@ function UserTabs({ user }: Readonly<{ user: User }>) {
       </TabsContent>
 
       <TabsContent value={"devices"}>
-        <RestrictedAccess page={"Devices"} hasAccess={permission.devices.read}>
+        <RestrictedAccess page={"Devices"} hasAccess={isSelf || permission.devices.read}>
           <UserDevicesTable userId={user.id} headingTarget={portalTarget} />
         </RestrictedAccess>
       </TabsContent>
 
       <TabsContent value={"activity"}>
-        <RestrictedAccess page={"Activity"} hasAccess={permission.events.read}>
+        <RestrictedAccess page={"Activity"} hasAccess={isSelf || permission.events.read}>
           <UserActivityTable user={user} headingTarget={portalTarget} />
         </RestrictedAccess>
       </TabsContent>
