@@ -21,7 +21,7 @@ import { headerHeight } from "@/layouts/Header";
 import { NetworkNavigation } from "@/modules/networks/misc/NetworkNavigation";
 import { useLoggedInUser } from "@/contexts/UsersProvider";
 import { SmallBadge } from "@components/ui/SmallBadge";
-import { BookOpen, BoxIcon, Laptop, LifeBuoy, NetworkIcon, ServerIcon } from "lucide-react";
+import { BookOpen, BoxIcon, KeySquare, Laptop, LifeBuoy, NetworkIcon, ServerIcon } from "lucide-react";
 import { useSupportEnabled } from "@/hooks/useSupportEnabled";
 import * as React from "react";
 import ActivityIcon from "@/assets/icons/ActivityIcon";
@@ -116,6 +116,12 @@ export default function Navigation({
                   icon={<SetupKeysIcon />}
                   label="SDK Keys"
                   href={"/sdk-keys"}
+                  visible={permission.setup_keys.read}
+                />
+                <SidebarItem
+                  icon={<KeySquare size={16} />}
+                  label="Setup Keys"
+                  href={"/setup-keys"}
                   visible={permission.setup_keys.read}
                 />
                 <SidebarItem

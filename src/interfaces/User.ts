@@ -20,6 +20,8 @@ export interface User {
   /** @deprecated use displayName */
   name?: string;
   role: Role;
+  /** "service" is the identity of a setup key's devices: no password, no dashboard sign-in. */
+  kind?: "human" | "service";
   isBlocked: boolean;
   /** Set when the identity provider provisions the user over SCIM; it then blocks, unblocks and deletes them. */
   scimUserName?: string;
