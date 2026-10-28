@@ -18,10 +18,13 @@ const IdentityProvidersTable = lazy(
 );
 
 export default function IdentityProvidersPage() {
+  const { permission } = usePermissions();
   const { data: providers, isLoading } = useFetchApi<IdentityProvider[]>(
     "/ui/identity-providers",
+    false,
+    true,
+    permission.identity_providers.read,
   );
-  const { permission } = usePermissions();
 
   const { ref: headingRef, portalTarget } =
     usePortalElement<HTMLHeadingElement>();

@@ -92,7 +92,8 @@ export default function useFetchApi<T>(
   allowFetch = true,
   options?: RequestOptions,
 ) {
-  const handleErrors = useApiErrorHandling(ignoreError);
+  // A read the caller's role may not make is not an error: the page already shows RestrictedAccess
+  const handleErrors = useApiErrorHandling(ignoreError, true);
   const { globalApiParams } = useApplicationContext();
 
   const cacheKey = options?.key ? [url, options.key] : url;
@@ -169,7 +170,7 @@ export function useApiCall<T>(
   };
 }
 
-export function useApiErrorHandling(ignoreError = false) {
+export function useApiErrorHandling(ignoreError = false, quietForbidden = false) {
   const router = useRouter();
   const currentPath = usePathname();
   const { setError } = useErrorBoundary();
@@ -197,6 +198,10 @@ export function useApiErrorHandling(ignoreError = false) {
           type: "user-status",
         });
         window.location.href = `/error?${params.toString()}`;
+        return Promise.reject(err);
+      }
+      if (quietForbidden) {
+        console.warn("[api] forbidden for this role", err);
         return Promise.reject(err);
       }
     }
