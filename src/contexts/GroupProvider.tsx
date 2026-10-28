@@ -39,10 +39,10 @@ export const GroupProvider = ({
     });
 
     notify({
-      title: "Delete Group " + group.name,
-      description: "Group successfully deleted",
+      title: "Delete Tenant " + group.name,
+      description: "Tenant successfully deleted",
       promise,
-      loadingMessage: "Deleting group...",
+      loadingMessage: "Deleting tenant...",
     });
 
     return promise;
@@ -51,9 +51,9 @@ export const GroupProvider = ({
   const deleteGroup = async () => {
     if (!permission?.groups?.delete) return;
     const choice = await confirm({
-      title: `Delete '${group.name}'?`,
+      title: `Delete tenant '${group.name}'?`,
       description:
-        "Are you sure you want to delete this group? This action cannot be undone.",
+        "Every active session of the tenant is revoked, and its users can no longer sign in or connect. This action cannot be undone from the dashboard.",
       confirmText: "Delete",
       cancelText: "Cancel",
       type: "danger",
@@ -73,10 +73,10 @@ export const GroupProvider = ({
       });
 
     notify({
-      title: `Rename Group ${group.name}`,
-      description: "Group successfully renamed to " + name,
+      title: `Rename Tenant ${group.name}`,
+      description: "Tenant successfully renamed to " + name,
       promise,
-      loadingMessage: "Renaming group...",
+      loadingMessage: "Renaming tenant...",
     });
 
     return promise;

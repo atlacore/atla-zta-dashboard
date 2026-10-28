@@ -6,6 +6,7 @@ import DataTableRefreshButton from "@components/table/DataTableRefreshButton";
 import { DataTableRowsPerPage } from "@components/table/DataTableRowsPerPage";
 import { notify } from "@components/Notification";
 import Button from "@components/Button";
+import CheckboxField from "@components/CheckboxField";
 import { InstallClientButton } from "@components/ui/InstallClientButton";
 import NoResults from "@components/ui/NoResults";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
@@ -13,7 +14,7 @@ import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
 import { Laptop, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useSWRConfig } from "swr";
 import { useDialog } from "@/contexts/DialogProvider";
 import { usePermissions } from "@/contexts/PermissionsProvider";
@@ -53,22 +54,31 @@ export default function DevicesTable({
   };
 
   const revoke = async (device: Device) => {
+    const options = { revokeSessions: false };
     const choice = await confirm({
       title: `Revoke device '${device.deviceId}'?`,
       description:
-        "This device will no longer be able to claim signed posture. Any active session it holds is not affected.",
+        "This device will no longer be able to claim signed posture.",
       confirmText: "Revoke",
       cancelText: "Cancel",
       type: "danger",
+      children: (
+        <RevokeSessionsField
+          onChange={(checked) => (options.revokeSessions = checked)}
+        />
+      ),
     });
     if (!choice) return;
 
+    const query = options.revokeSessions ? "?revoke_sessions=true" : "";
     const promise = deviceRequest
-      .del(undefined, `/${device.id}`)
+      .del(undefined, `/${device.id}${query}`)
       .then(refreshDevices);
     notify({
       title: "Revoke Device",
-      description: `Device '${device.deviceId}' successfully revoked.`,
+      description: options.revokeSessions
+        ? `Device '${device.deviceId}' and its session successfully revoked.`
+        : `Device '${device.deviceId}' successfully revoked.`,
       promise,
       loadingMessage: "Revoking device...",
     });
@@ -182,5 +192,25 @@ export default function DevicesTable({
         </>
       )}
     </DataTable>
+  );
+}
+
+// The confirm dialog renders its children once, so the checkbox keeps its own state.
+function RevokeSessionsField({
+  onChange,
+}: Readonly<{ onChange: (checked: boolean) => void }>) {
+  const [checked, setChecked] = useState(false);
+  return (
+    <CheckboxField
+      label={"Also revoke its active session"}
+      description={
+        "Tears down the device's tunnel and revokes the credentials issued to it. Otherwise the session runs until it expires."
+      }
+      checked={checked}
+      onChange={(value) => {
+        setChecked(value);
+        onChange(value);
+      }}
+    />
   );
 }
