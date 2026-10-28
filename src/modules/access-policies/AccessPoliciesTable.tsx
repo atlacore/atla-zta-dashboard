@@ -12,12 +12,12 @@ import { Label } from "@components/Label";
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useApiCall } from "@utils/api";
 import dayjs from "dayjs";
-import { PenSquare, PlusCircle, ShieldCheck, Trash2 } from "lucide-react";
+import { PenSquare, PlusCircle, ScanSearch, ShieldCheck, Trash2 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSWRConfig } from "swr";
-import { useDialog } from "@/contexts/DialogProvider";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import PolicySimulationResult, { usePolicySimulation } from "@/modules/access-policies/PolicySimulation";
 import { usePermissions } from "@/contexts/PermissionsProvider";
 import {
   AccessPolicy,
@@ -58,16 +58,27 @@ function CreateAccessPolicyModal({
   );
   const [jsonError, setJsonError] = useState("");
   const policyRequest = useApiCall<AccessPolicy>("/ui/access-policies");
+  const simulation = usePolicySimulation();
 
-  const handleCreate = () => {
-    let rules: PolicyRuleRequest[];
+  const parseRules = (): PolicyRuleRequest[] | undefined => {
     try {
-      rules = JSON.parse(rulesJson);
+      const rules = JSON.parse(rulesJson);
       setJsonError("");
+      return rules;
     } catch {
       setJsonError("Invalid JSON");
-      return;
+      return undefined;
     }
+  };
+
+  const checkImpact = () => {
+    const rules = parseRules();
+    if (rules) simulation.run({ add: [{ name: name.trim() || "draft", rules }] });
+  };
+
+  const handleCreate = () => {
+    const rules = parseRules();
+    if (!rules) return;
 
     const body: AccessPolicyCreateRequest = { name: name.trim(), rules };
     const promise = policyRequest.post(body).then(() => {
@@ -86,6 +97,7 @@ function CreateAccessPolicyModal({
     setName("");
     setRulesJson(JSON.stringify(DEFAULT_RULES, null, 2));
     setJsonError("");
+    simulation.reset();
     onOpenChange(false);
   };
 
@@ -103,6 +115,14 @@ function CreateAccessPolicyModal({
         <>
           <Button variant={"secondary"} onClick={handleClose}>
             Cancel
+          </Button>
+          <Button
+            variant={"default-outline"}
+            onClick={checkImpact}
+            disabled={simulation.running}
+          >
+            <ScanSearch size={16} />
+            Check impact
           </Button>
           <Button
             variant={"primary"}
@@ -137,12 +157,20 @@ function CreateAccessPolicyModal({
               "w-full bg-nb-gray-900/30 border border-nb-gray-900 rounded-md px-3 py-2 font-mono text-xs text-nb-gray-100 resize-y min-h-[160px] focus:outline-none"
             }
             value={rulesJson}
-            onChange={(e) => setRulesJson(e.target.value)}
+            onChange={(e) => {
+              setRulesJson(e.target.value);
+              simulation.reset();
+            }}
           />
           {jsonError && (
             <p className={"text-xs text-red-400 mt-1"}>{jsonError}</p>
           )}
         </div>
+        <PolicySimulationResult
+          result={simulation.result}
+          error={simulation.error}
+          running={simulation.running}
+        />
       </div>
     </FormModal>
   );
@@ -222,6 +250,72 @@ function EditAccessPolicyModal({
   );
 }
 
+// ── Delete Modal ──────────────────────────────────────────────────────────────
+
+type DeleteModalProps = {
+  policy: AccessPolicy;
+  onClose: () => void;
+  onDeleted: () => void;
+};
+
+// Shows who would lose access before the policy goes, from a dry run of its removal
+function DeleteAccessPolicyModal({ policy, onClose, onDeleted }: Readonly<DeleteModalProps>) {
+  const policyRequest = useApiCall<AccessPolicy>("/ui/access-policies");
+  const simulation = usePolicySimulation();
+
+  useEffect(() => {
+    simulation.run({ remove: [policy.id] });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [policy.id]);
+
+  const handleDelete = () => {
+    const promise = policyRequest.del(undefined, `/${policy.id}`).then(() => {
+      onDeleted();
+      onClose();
+    });
+    notify({
+      title: "Delete Access Policy",
+      description: `Policy '${policy.name}' deleted.`,
+      promise,
+      loadingMessage: "Deleting...",
+    });
+  };
+
+  return (
+    <FormModal
+      open={true}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+      maxWidthClass={"max-w-xl"}
+      icon={<Trash2 size={20} />}
+      title={`Delete '${policy.name}'?`}
+      description={
+        "The policy is deleted and the tenant's Rego is rebuilt. Sessions that already hold access keep it until they reconnect or are re-checked."
+      }
+      footer={
+        <>
+          <Button variant={"secondary"} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant={"danger"} onClick={handleDelete}>
+            <Trash2 size={16} />
+            Delete
+          </Button>
+        </>
+      }
+    >
+      <div className={"px-8 pb-6"}>
+        <PolicySimulationResult
+          result={simulation.result}
+          error={simulation.error}
+          running={simulation.running}
+        />
+      </div>
+    </FormModal>
+  );
+}
+
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 type Props = {
@@ -238,37 +332,14 @@ export default function AccessPoliciesTable({
   const { mutate } = useSWRConfig();
   const path = usePathname();
   const { permission } = usePermissions();
-  const { confirm } = useDialog();
   const [createOpen, setCreateOpen] = useState(false);
   const [editPolicy, setEditPolicy] = useState<AccessPolicy | null>(null);
-  const policyRequest = useApiCall<AccessPolicy>("/ui/access-policies");
+  const [deletingPolicy, setDeletingPolicy] = useState<AccessPolicy | null>(null);
 
   const [sorting, setSorting] = useLocalStorage<SortingState>(
     "netbird-table-sort" + path,
     [{ id: "createdAt", desc: true }],
   );
-
-  const deletePolicy = async (policy: AccessPolicy) => {
-    const choice = await confirm({
-      title: `Delete '${policy.name}'?`,
-      description:
-        "This access policy will be permanently deleted and Rego will be rebuilt.",
-      confirmText: "Delete",
-      cancelText: "Cancel",
-      type: "danger",
-    });
-    if (!choice) return;
-
-    const promise = policyRequest
-      .del(undefined, `/${policy.id}`)
-      .then(() => mutate("/ui/access-policies"));
-    notify({
-      title: "Delete Access Policy",
-      description: `Policy '${policy.name}' deleted.`,
-      promise,
-      loadingMessage: "Deleting...",
-    });
-  };
 
   const columns: ColumnDef<AccessPolicy>[] = [
     {
@@ -331,7 +402,7 @@ export default function AccessPoliciesTable({
           <Button
             variant={"danger-outline"}
             size={"sm"}
-            onClick={() => deletePolicy(row.original)}
+            onClick={() => setDeletingPolicy(row.original)}
             tooltip={"Delete"}
             disabled={!permission.policies?.delete}
           >
@@ -357,6 +428,14 @@ export default function AccessPoliciesTable({
             if (!v) setEditPolicy(null);
           }}
           onSaved={() => mutate("/ui/access-policies")}
+        />
+      )}
+      {deletingPolicy && (
+        <DeleteAccessPolicyModal
+          key={deletingPolicy.id}
+          policy={deletingPolicy}
+          onClose={() => setDeletingPolicy(null)}
+          onDeleted={() => mutate("/ui/access-policies")}
         />
       )}
       <DataTable
