@@ -5,6 +5,7 @@ import { ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { auth } from "@/utils/auth";
+import { takeLoginRedirect } from "@/utils/loginRedirect";
 
 // The OIDC callback redirects here with the session token in the URL
 // fragment (never the query string, so it never reaches server logs).
@@ -21,7 +22,7 @@ export default function OIDCCallbackPage() {
       return;
     }
     auth.setToken(token);
-    router.replace("/");
+    router.replace(takeLoginRedirect());
   }, [router]);
 
   return (

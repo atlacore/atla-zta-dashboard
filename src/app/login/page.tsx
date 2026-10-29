@@ -6,6 +6,7 @@ import { Building2, Eye, EyeOff, Lock, Mail, ShieldCheck } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useId, useState } from "react";
 import { auth } from "@/utils/auth";
+import { rememberLoginRedirect, safeRedirect } from "@/utils/loginRedirect";
 import { PublicIdentityProvider } from "@/interfaces/IdentityProvider";
 
 const config = loadConfig();
@@ -101,7 +102,7 @@ function LdapLoginForm({
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  const redirect = safeRedirect(searchParams.get("redirect"));
   const tenant = searchParams.get("tenant") || "";
 
   const emailId = useId();
@@ -383,6 +384,7 @@ function LoginForm() {
                     <a
                       key={p.id}
                       href={p.loginUrl}
+                      onClick={() => rememberLoginRedirect(redirect)}
                       className={cn(
                         "flex h-10 w-full items-center justify-center gap-2 rounded-lg border",
                         "border-nb-gray-900 bg-nb-gray-940 text-sm font-medium text-nb-gray-200",
