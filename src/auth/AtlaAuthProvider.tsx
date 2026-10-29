@@ -25,7 +25,8 @@ export default function AtlaAuthProvider({ children }: Props) {
     }
 
     if (!auth.isAuthenticated()) {
-      router.replace(`/login?redirect=${encodeURIComponent(path)}`);
+      // the query string too: /device-login carries the desktop client's request in it
+      router.replace(`/login?redirect=${encodeURIComponent(path + window.location.search)}`);
       return;
     }
 
