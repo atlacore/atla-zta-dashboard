@@ -31,6 +31,12 @@ function readRequest(params: URLSearchParams): DeviceLoginRequest | null {
   return Object.values(req).every(Boolean) ? req : null;
 }
 
+// Back to the login with this page (and the client's request in its query) as the place to return to
+function signInAgain() {
+  auth.clearToken();
+  window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+}
+
 // Only a loopback address may receive the code; the control plane checks again
 function isLoopback(uri: string) {
   try {
@@ -49,9 +55,13 @@ function DeviceLogin() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string>();
 
+  // A stored token the control plane no longer accepts (expired, keys rotated) means signing in again
   useEffect(() => {
     fetch(`${config.apiOrigin}/api/ui/user`, { headers: { "X-User-Token": auth.getToken() ?? "" } })
-      .then((res) => (res.ok ? res.json() : undefined))
+      .then((res) => {
+        if (res.status === 401) signInAgain();
+        return res.ok ? res.json() : undefined;
+      })
       .then(setUser)
       .catch(() => undefined);
   }, []);
@@ -69,6 +79,7 @@ function DeviceLogin() {
         headers: { "Content-Type": "application/json", "X-User-Token": auth.getToken() ?? "" },
         body: JSON.stringify(request),
       });
+      if (res.status === 401) return signInAgain();
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.message || body.error || body.validation_error || "Could not sign the device in");
       setDone("Returning to the Atla app…");
